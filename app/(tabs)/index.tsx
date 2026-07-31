@@ -1,0 +1,133 @@
+import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { NextDeadlineCard } from '../../components/NextDeadlineCard';
+import { Body, Chip, Heading, Icon, Input, Kicker, Tag, TornReceiptCard } from '../../components/ui';
+import { derive, fmtD, money } from '../../lib/data';
+import { useVault } from '../../lib/store';
+import { colors, fonts, ink, radius, shadow } from '../../lib/theme';
+
+const FILTERS = ['All', 'Returns open', 'Under warranty', 'This month'];
+
+export default function VaultScreen() {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { receipts } = useVault();
+  const [filter, setFilter] = useState('All');
+  const [query, setQuery] = useState('');
+
+  const yearTotal = useMemo(() => receipts.reduce((a, r) => a + r.total, 0), [receipts]);
+
+  const list = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return receipts.filter((r) => {
+      const v = derive(r);
+      if (filter === 'Returns open' && v.retLeft < 0) return false;
+      if (filter === 'Under warranty' && v.warLeft < 0) return false;
+      if (filter === 'This month' && r.date.getMonth() !== 6) return false;
+      if (q) {
+        const hay = `${r.merchant} ${r.cat} ${r.total}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [receipts, filter, query]);
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.bg }}
+      contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: 132, paddingHorizontal: 20, gap: 16 }}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* header with decorative blobs */}
+      <View style={{ position: 'relative', paddingTop: 4, paddingBottom: 2 }}>
+        <View
+          style={{
+            position: 'absolute', right: -26, top: -34, width: 132, height: 132,
+            borderRadius: 999, backgroundColor: colors.accent2Ramp[200], opacity: 0.7,
+          }}
+        />
+        <View
+          style={{
+            position: 'absolute', right: 44, top: 38, width: 52, height: 52,
+            borderRadius: 999, backgroundColor: colors.accentRamp[200], opacity: 0.8,
+          }}
+        />
+        <Pressable
+          onPress={() => router.push('/sync')}
+          accessibilityLabel="Cloud backup"
+          style={({ pressed }) => [
+            {
+              position: 'absolute', right: 0, top: 0, zIndex: 5,
+              width: 44, height: 44, borderRadius: radius.pill,
+              backgroundColor: colors.surface,
+              alignItems: 'center', justifyContent: 'center',
+              opacity: pressed ? 0.85 : 1,
+            },
+            shadow.sm,
+          ]}
+        >
+          <Icon name="cloud" size={21} color={colors.accent} />
+        </Pressable>
+
+        <View>
+          <Kicker style={{ color: colors.accentRamp[700] }}>Every scrap, kept</Kicker>
+          <Heading style={{ fontSize: 38, marginTop: 2, marginBottom: 6 }}>Vault</Heading>
+          <Body style={{ fontSize: 12.5, color: ink(0.6) }}>
+            <Body style={{ fontFamily: fonts.heading }}>{receipts.length}</Body> receipts ·{' '}
+            <Body style={{ fontFamily: fonts.heading }}>{money(yearTotal)}</Body> this year
+          </Body>
+        </View>
+      </View>
+
+      <NextDeadlineCard />
+
+      <Input placeholder="Search merchant, item, amount…" value={query} onChangeText={setQuery} />
+
+      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+        {FILTERS.map((f) => (
+          <Chip key={f} label={f} active={f === filter} onPress={() => setFilter(f)} />
+        ))}
+      </View>
+
+      <Kicker style={{ color: ink(0.5), letterSpacing: 1 }}>{filter === 'All' ? 'Recent' : filter}</Kicker>
+
+      <View style={{ gap: 10 }}>
+        {list.map((r) => {
+          const v = derive(r);
+          let badge: { label: string; variant: 'accent' | 'accent-2' } | null = null;
+          if (v.retLeft >= 0) badge = { label: `Return ${v.retLeft}d`, variant: 'accent-2' };
+          else if (v.warLeft >= 0) badge = { label: 'Warranty', variant: 'accent' };
+          return (
+            <TornReceiptCard key={r.id} onPress={() => router.push(`/receipt/${r.id}`)}>
+              <View
+                style={{
+                  width: 52, alignSelf: 'stretch', marginRight: 14,
+                  alignItems: 'center', justifyContent: 'center',
+                  borderRightWidth: 2, borderStyle: 'dotted', borderColor: ink(0.16),
+                }}
+              >
+                <Heading style={{ fontSize: 22, color: colors.accent2Ramp[800] }}>{r.merchant[0]}</Heading>
+              </View>
+              <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+                <Heading style={{ fontSize: 16, lineHeight: 18 }} >{r.merchant}</Heading>
+                <Body style={{ fontSize: 12, color: ink(0.55) }}>
+                  {fmtD(r.date)} · {r.cat}
+                </Body>
+              </View>
+              <View style={{ alignItems: 'flex-end', gap: 5, paddingLeft: 10 }}>
+                <Heading style={{ fontSize: 19, letterSpacing: -0.4 }}>{money(r.total)}</Heading>
+                {badge && (
+                  <Tag variant={badge.variant} textStyle={{ fontSize: 10 }} style={{ paddingVertical: 2, paddingHorizontal: 8 }}>
+                    {badge.label}
+                  </Tag>
+                )}
+              </View>
+            </TornReceiptCard>
+          );
+        })}
+      </View>
+    </ScrollView>
+  );
+}

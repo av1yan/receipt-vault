@@ -1,13 +1,15 @@
 {
   "expo": {
-    "name": "receipt-vault",
+    "name": "Receipt Vault",
     "slug": "receipt-vault",
+    "scheme": "receiptvault",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.av1yan.receipt-vault"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +21,27 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-sqlite",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Receipt Vault to use the camera to capture receipts."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Receipt Vault to add receipt photos from your library."
+        }
+      ],
+      "expo-notifications",
+      "expo-secure-store"
+    ]
   }
 }

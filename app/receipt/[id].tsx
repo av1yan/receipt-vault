@@ -1,0 +1,231 @@
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Image, Pressable, ScrollView, Share, View } from 'react-native';
+import { Body, Button, Heading, Icon, Kicker, Tag } from '../../components/ui';
+import { derive, fmtD, fmtDY, money } from '../../lib/data';
+import { useVault } from '../../lib/store';
+import { colors, fonts, ink, radius, shadow, scrim } from '../../lib/theme';
+
+export default function ReceiptDetail() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const { receipts } = useVault();
+  const receipt = receipts.find((r) => String(r.id) === String(id));
+
+  const close = () => router.back();
+  if (!receipt) {
+    close();
+    return null;
+  }
+  const v = derive(receipt);
+  const itemsSum = receipt.items.reduce((a, li) => a + li.price, 0);
+
+  const share = () => {
+    const lines = [
+      `${receipt.merchant} — ${money(receipt.total)}`,
+      `${fmtDY(receipt.date)} · ${receipt.cat}`,
+      ...receipt.items.map((li) => `• ${li.name}  ${money(li.price)}`),
+      v.retLeft >= 0 && v.retBy ? `Return by ${fmtDY(v.retBy)}` : '',
+      v.warLeft >= 0 && v.warTo ? `Warranty until ${fmtDY(v.warTo)}` : '',
+    ].filter(Boolean);
+    Share.share({ message: lines.join('\n') }).catch(() => {});
+  };
+
+  return (
+    <Pressable
+      onPress={close}
+      style={{ flex: 1, backgroundColor: scrim(0.45), justifyContent: 'flex-end' }}
+    >
+      <Pressable
+        onPress={() => {}}
+        style={{
+          maxHeight: '90%',
+          backgroundColor: colors.bg,
+          borderTopLeftRadius: 34,
+          borderTopRightRadius: 34,
+          paddingHorizontal: 20,
+          paddingTop: 12,
+          paddingBottom: 30,
+        }}
+      >
+        {/* grabber */}
+        <View
+          style={{
+            width: 44, height: 5, borderRadius: 999, alignSelf: 'center',
+            backgroundColor: ink(0.16), marginBottom: 16,
+          }}
+        />
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* ── Header: photo + merchant ─────────────────────────────── */}
+          <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
+            {receipt.imageUri ? (
+              <Image
+                source={{ uri: receipt.imageUri }}
+                style={{
+                  width: 74, height: 96, borderRadius: 16,
+                  backgroundColor: colors.neutral[200],
+                  borderWidth: 1, borderColor: ink(0.08),
+                }}
+                resizeMode="cover"
+              />
+            ) : (
+              <View
+                style={{
+                  width: 74, height: 96, borderRadius: 16,
+                  borderWidth: 1.5, borderStyle: 'dashed', borderColor: ink(0.18),
+                  backgroundColor: colors.surface,
+                  alignItems: 'center', justifyContent: 'center', gap: 5,
+                }}
+              >
+                <Icon name="image" size={22} color={ink(0.32)} />
+                <Body style={{ fontSize: 9, letterSpacing: 0.6, textTransform: 'uppercase', color: ink(0.4) }}>
+                  No photo
+                </Body>
+              </View>
+            )}
+            <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+              <Heading style={{ fontSize: 23, lineHeight: 26 }}>{receipt.merchant}</Heading>
+              <Body style={{ fontSize: 12.5, color: ink(0.55) }}>
+                {fmtDY(receipt.date)} · {receipt.cat}
+              </Body>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 4 }}>
+                <Heading style={{ fontSize: 30, letterSpacing: -0.5 }}>{money(receipt.total)}</Heading>
+                <Tag variant="outline" textStyle={{ fontSize: 10.5 }} style={{ paddingVertical: 2, marginBottom: 5 }}>
+                  {receipt.pay}
+                </Tag>
+              </View>
+            </View>
+          </View>
+
+          {/* ── Deadline status ──────────────────────────────────────── */}
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
+            <DeadlineCard
+              tone="return"
+              label="Return window"
+              active={v.retLeft >= 0}
+              value={v.retLeft >= 0 ? `${v.retLeft}d` : 'Closed'}
+              note={v.retLeft >= 0 ? (v.retBy ? `by ${fmtD(v.retBy)}` : 'open') : 'window passed'}
+            />
+            <DeadlineCard
+              tone="warranty"
+              label="Warranty"
+              active={v.warLeft >= 0}
+              value={v.warLeft >= 0 ? `${v.warLeft}d` : v.warTo ? 'Expired' : 'None'}
+              note={
+                v.warLeft >= 0
+                  ? v.warTo
+                    ? `until ${fmtD(v.warTo)}`
+                    : 'covered'
+                  : v.warTo
+                    ? `ended ${fmtD(v.warTo)}`
+                    : 'not covered'
+              }
+            />
+          </View>
+
+          {/* ── Line items (receipt block) ───────────────────────────── */}
+          {receipt.items.length > 0 && (
+            <View
+              style={{
+                marginTop: 18,
+                backgroundColor: colors.surface,
+                borderRadius: radius.lg * 1.1,
+                paddingHorizontal: 16,
+                paddingTop: 14,
+                paddingBottom: 6,
+                ...shadow.sm,
+              }}
+            >
+              <Kicker style={{ color: ink(0.42), letterSpacing: 1.2, marginBottom: 6 }}>Line items</Kicker>
+              {receipt.items.map((li, i) => (
+                <View
+                  key={i}
+                  style={{
+                    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                    paddingVertical: 10,
+                    borderBottomWidth: 1, borderStyle: 'dashed', borderBottomColor: ink(0.12),
+                  }}
+                >
+                  <Body style={{ fontSize: 14, flex: 1, paddingRight: 12 }}>{li.name}</Body>
+                  <Body style={{ fontFamily: fonts.heading, fontSize: 14.5, color: ink(0.85) }}>
+                    {money(li.price)}
+                  </Body>
+                </View>
+              ))}
+              {/* total */}
+              <View
+                style={{
+                  flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline',
+                  paddingTop: 12, paddingBottom: 12,
+                }}
+              >
+                <View>
+                  <Heading style={{ fontSize: 15 }}>Total</Heading>
+                  {Math.abs(itemsSum - receipt.total) > 0.005 && (
+                    <Body style={{ fontSize: 10.5, color: ink(0.42), marginTop: 1 }}>
+                      items {money(itemsSum)} + tax/fees
+                    </Body>
+                  )}
+                </View>
+                <Heading style={{ fontSize: 22, letterSpacing: -0.4 }}>{money(receipt.total)}</Heading>
+              </View>
+            </View>
+          )}
+
+          {/* ── Actions ──────────────────────────────────────────────── */}
+          {(v.retLeft >= 0 || v.warLeft >= 0) && (
+            <View style={{ gap: 10, marginTop: 20 }}>
+              {v.retLeft >= 0 && (
+                <Button
+                  title="Draft return request"
+                  variant="primary"
+                  block
+                  onPress={() => router.push(`/claim/${receipt.id}?kind=return`)}
+                />
+              )}
+              {v.warLeft >= 0 && (
+                <Button
+                  title="File a warranty claim"
+                  variant={v.retLeft >= 0 ? 'secondary' : 'primary'}
+                  block
+                  onPress={() => router.push(`/claim/${receipt.id}?kind=warranty`)}
+                />
+              )}
+            </View>
+          )}
+
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+            <Button title="Share" variant="secondary" style={{ flex: 1 }} onPress={share} />
+            <Button title="Close" variant="secondary" style={{ flex: 1 }} onPress={close} />
+          </View>
+        </ScrollView>
+      </Pressable>
+    </Pressable>
+  );
+}
+
+// ── Deadline mini-card ────────────────────────────────────────────────
+function DeadlineCard({
+  tone,
+  label,
+  value,
+  note,
+  active,
+}: {
+  tone: 'return' | 'warranty';
+  label: string;
+  value: string;
+  note: string;
+  active: boolean;
+}) {
+  const ramp = tone === 'return' ? colors.accent2Ramp : colors.accentRamp;
+  const bg = active ? ramp[100] : colors.neutral[100];
+  const fg = active ? ramp[800] : ink(0.5);
+  const soft = active ? ramp[700] : ink(0.42);
+  return (
+    <View style={{ flex: 1, backgroundColor: bg, borderRadius: radius.lg, paddingVertical: 13, paddingHorizontal: 14, gap: 2 }}>
+      <Kicker style={{ color: soft, fontSize: 9.5, letterSpacing: 0.8 }}>{label}</Kicker>
+      <Heading style={{ fontSize: 20, color: fg }}>{value}</Heading>
+      <Body style={{ fontSize: 11.5, color: soft }}>{note}</Body>
+    </View>
+  );
+}
