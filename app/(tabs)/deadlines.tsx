@@ -13,10 +13,12 @@ type Row = {
   kindShort: string;
   sub: string;
   left: number;
-  pill: string;
-  pillVariant: 'accent' | 'accent-2' | 'outline';
-  dotBg: string;
-  dotFg: string;
+  countMain: string;
+  countUnit: string;
+  tileBg: string;
+  tileFg: string;
+  countColor: string;
+  barColor: string;
   pct: string;
 };
 
@@ -63,11 +65,14 @@ export default function DeadlinesScreen() {
     receipts.forEach((r) => {
       const v = derive(r);
       if (v.retLeft >= 0 && v.retBy) {
+        const urgent = v.retLeft <= 7;
         out.push({
           key: `ret-${r.id}`, merchant: r.merchant, kindShort: 'RET',
           sub: `Return by ${fmtDY(v.retBy)}`, left: v.retLeft,
-          pill: `${v.retLeft} days left`, pillVariant: v.retLeft <= 7 ? 'accent' : 'accent-2',
-          dotBg: colors.accent2Ramp[200], dotFg: colors.accent2Ramp[600],
+          countMain: `${v.retLeft}`, countUnit: 'days left',
+          tileBg: colors.accent2Ramp[200], tileFg: colors.accent2Ramp[700],
+          countColor: urgent ? colors.accent : colors.accent2Ramp[700],
+          barColor: urgent ? colors.accent : colors.accent2Ramp[500],
           pct: `${Math.max(4, Math.round((100 * v.retLeft) / r.ret))}%`,
         });
       }
@@ -75,8 +80,10 @@ export default function DeadlinesScreen() {
         out.push({
           key: `war-${r.id}`, merchant: r.merchant, kindShort: 'WAR',
           sub: `Warranty to ${fmtDY(v.warTo)}`, left: v.warLeft,
-          pill: `${Math.round(v.warLeft / 30)} mo left`, pillVariant: 'outline',
-          dotBg: colors.accentRamp[200], dotFg: colors.accentRamp[600],
+          countMain: `${Math.max(1, Math.round(v.warLeft / 30))}`, countUnit: 'mo left',
+          tileBg: colors.accentRamp[200], tileFg: colors.accentRamp[700],
+          countColor: colors.accentRamp[700],
+          barColor: colors.accentRamp[500],
           pct: `${Math.max(4, Math.round((100 * v.warLeft) / (r.war * 30)))}%`,
         });
       }
@@ -130,28 +137,52 @@ export default function DeadlinesScreen() {
         )}
       </Card>
 
-      <View style={{ gap: 10, marginTop: 4 }}>
-        {rows.map((d) => (
-          <Card key={d.key} style={{ gap: 10, padding: 14 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
-              <View
-                style={{
-                  width: 38, height: 38, borderRadius: 999,
-                  alignItems: 'center', justifyContent: 'center', backgroundColor: d.dotBg,
-                }}
-              >
-                <Body style={{ fontFamily: fonts.heading, fontSize: 11, color: d.dotFg }}>{d.kindShort}</Body>
+      {rows.length > 0 ? (
+        <View style={{ gap: 10, marginTop: 4 }}>
+          {rows.map((d) => (
+            <Card key={d.key} style={{ gap: 12, padding: 14 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View
+                  style={{
+                    width: 44, height: 44, borderRadius: 13,
+                    alignItems: 'center', justifyContent: 'center', backgroundColor: d.tileBg,
+                  }}
+                >
+                  <Body style={{ fontFamily: fonts.heading, fontSize: 11, letterSpacing: 0.4, color: d.tileFg }}>
+                    {d.kindShort}
+                  </Body>
+                </View>
+                <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                  <Heading style={{ fontSize: 16 }}>{d.merchant}</Heading>
+                  <Body style={{ fontSize: 12, color: ink(0.55) }}>{d.sub}</Body>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Heading style={{ fontSize: 23, letterSpacing: -0.5, color: d.countColor }}>{d.countMain}</Heading>
+                  <Body style={{ fontSize: 10, letterSpacing: 0.3, color: ink(0.45), marginTop: -2 }}>
+                    {d.countUnit}
+                  </Body>
+                </View>
               </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Heading style={{ fontSize: 16 }}>{d.merchant}</Heading>
-                <Body style={{ fontSize: 12, color: ink(0.55) }}>{d.sub}</Body>
-              </View>
-              <Tag variant={d.pillVariant} textStyle={{ fontSize: 11 }}>{d.pill}</Tag>
-            </View>
-            <ProgressBar pct={d.pct} color={d.dotFg} />
-          </Card>
-        ))}
-      </View>
+              <ProgressBar pct={d.pct} color={d.barColor} />
+            </Card>
+          ))}
+        </View>
+      ) : (
+        <Card style={{ alignItems: 'center', gap: 8, paddingVertical: 30, marginTop: 4 }}>
+          <View
+            style={{
+              width: 52, height: 52, borderRadius: 999,
+              alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent2Ramp[200],
+            }}
+          >
+            <Icon name="clock" size={24} color={colors.accent2Ramp[700]} />
+          </View>
+          <Heading style={{ fontSize: 17, marginTop: 2 }}>All clear</Heading>
+          <Body style={{ fontSize: 12.5, color: ink(0.55), textAlign: 'center', paddingHorizontal: 20 }}>
+            No open return windows or warranties right now. New receipts show up here automatically.
+          </Body>
+        </Card>
+      )}
     </ScrollView>
   );
 }

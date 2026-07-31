@@ -60,19 +60,25 @@ export default function SpendingScreen() {
         </Body>
       </Card>
 
-      <Kicker style={{ color: ink(0.5), letterSpacing: 1, marginTop: 4 }}>By category</Kicker>
-
-      <View style={{ gap: 13 }}>
-        {cats.map((c) => (
-          <View key={c.name} style={{ gap: 6 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Body style={{ fontSize: 13 }}>{c.name}</Body>
-              <Body style={{ fontFamily: fonts.heading, fontSize: 13 }}>{c.amount}</Body>
+      <Card style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14, gap: 0 }}>
+        <Kicker style={{ color: ink(0.42), letterSpacing: 1.2, marginBottom: 2 }}>By category</Kicker>
+        {cats.map((c, i) => (
+          <View
+            key={c.name}
+            style={{
+              paddingVertical: 12, gap: 8,
+              borderTopWidth: i === 0 ? 0 : 1, borderStyle: 'dashed', borderTopColor: ink(0.12),
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+              <View style={{ width: 9, height: 9, borderRadius: 999, backgroundColor: c.color }} />
+              <Body style={{ flex: 1, fontSize: 13.5 }}>{c.name}</Body>
+              <Body style={{ fontFamily: fonts.heading, fontSize: 14, color: ink(0.85) }}>{c.amount}</Body>
             </View>
-            <ProgressBar pct={c.pct} color={c.color} height={10} />
+            <ProgressBar pct={c.pct} color={c.color} height={8} />
           </View>
         ))}
-      </View>
+      </Card>
 
       <Button
         title="Export CSV"

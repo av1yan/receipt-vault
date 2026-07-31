@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Image, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NextDeadlineCard } from '../../components/NextDeadlineCard';
 import { Body, Chip, Heading, Icon, Input, Kicker, Tag, TornReceiptCard } from '../../components/ui';
@@ -101,15 +101,26 @@ export default function VaultScreen() {
           else if (v.warLeft >= 0) badge = { label: 'Warranty', variant: 'accent' };
           return (
             <TornReceiptCard key={r.id} onPress={() => router.push(`/receipt/${r.id}`)}>
-              <View
-                style={{
-                  width: 52, alignSelf: 'stretch', marginRight: 14,
-                  alignItems: 'center', justifyContent: 'center',
-                  borderRightWidth: 2, borderStyle: 'dotted', borderColor: ink(0.16),
-                }}
-              >
-                <Heading style={{ fontSize: 22, color: colors.accent2Ramp[800] }}>{r.merchant[0]}</Heading>
-              </View>
+              {r.imageUri ? (
+                <Image
+                  source={{ uri: r.imageUri }}
+                  style={{
+                    width: 46, height: 58, borderRadius: 12, marginRight: 14,
+                    backgroundColor: colors.neutral[200], borderWidth: 1, borderColor: ink(0.08),
+                  }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View
+                  style={{
+                    width: 46, height: 58, borderRadius: 12, marginRight: 14,
+                    backgroundColor: colors.accent2Ramp[200],
+                    alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <Heading style={{ fontSize: 20, color: colors.accent2Ramp[800] }}>{r.merchant[0]}</Heading>
+                </View>
+              )}
               <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
                 <Heading style={{ fontSize: 16, lineHeight: 18 }} >{r.merchant}</Heading>
                 <Body style={{ fontSize: 12, color: ink(0.55) }}>
