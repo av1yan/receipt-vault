@@ -1,5 +1,6 @@
 import { Tabs, useRouter } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Easing, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, IconName, Toast } from '../../components/ui';
 import { useVault } from '../../lib/store';
@@ -10,6 +11,53 @@ const TABS: { name: string; label: string; icon: IconName }[] = [
   { name: 'deadlines', label: 'Deadlines', icon: 'clock' },
   { name: 'spending', label: 'Spending', icon: 'bars' },
 ];
+
+// Colors as rgba so Animated can interpolate cleanly between them.
+const PILL_ON = 'rgba(255,242,235,1)'; // accentRamp[100]
+const PILL_OFF = 'rgba(255,242,235,0)';
+const LABEL_ON = 'rgba(198,113,57,1)'; // accent
+const LABEL_OFF = 'rgba(32,30,29,0.45)'; // ink(0.45)
+
+function TabButton({ t, focused, onPress }: { t: (typeof TABS)[number]; focused: boolean; onPress: () => void }) {
+  const v = useRef(new Animated.Value(focused ? 1 : 0)).current;
+  useEffect(() => {
+    Animated.timing(v, {
+      toValue: focused ? 1 : 0,
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false, // interpolating backgroundColor / color
+    }).start();
+  }, [focused, v]);
+
+  const bg = v.interpolate({ inputRange: [0, 1], outputRange: [PILL_OFF, PILL_ON] });
+  const label = v.interpolate({ inputRange: [0, 1], outputRange: [LABEL_OFF, LABEL_ON] });
+  const scale = v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] });
+  const offOpacity = v.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
+
+  return (
+    <Pressable onPress={onPress} hitSlop={6}>
+      <Animated.View
+        style={{
+          alignItems: 'center', gap: 3, paddingVertical: 7, paddingHorizontal: 12,
+          borderRadius: radius.pill, backgroundColor: bg, transform: [{ scale }],
+        }}
+      >
+        {/* cross-fade two icon copies for a smooth color transition */}
+        <View style={{ width: 21, height: 21 }}>
+          <Animated.View style={{ position: 'absolute', opacity: v }}>
+            <Icon name={t.icon} size={21} color={colors.accent} />
+          </Animated.View>
+          <Animated.View style={{ position: 'absolute', opacity: offOpacity }}>
+            <Icon name={t.icon} size={21} color={ink(0.45)} />
+          </Animated.View>
+        </View>
+        <Animated.Text style={{ fontFamily: fonts.body, fontSize: 10.5, letterSpacing: 0.3, color: label }}>
+          {t.label}
+        </Animated.Text>
+      </Animated.View>
+    </Pressable>
+  );
+}
 
 function PillTabBar({ state, navigation }: { state: any; navigation: any }) {
   const insets = useSafeAreaInsets();
@@ -35,28 +83,16 @@ function PillTabBar({ state, navigation }: { state: any; navigation: any }) {
     >
       {TABS.map((t, i) => {
         const focused = state.index === i;
-        const fg = focused ? colors.accent : ink(0.45);
         return (
-          <Pressable
+          <TabButton
             key={t.name}
+            t={t}
+            focused={focused}
             onPress={() => {
               const evt = navigation.emit({ type: 'tabPress', target: state.routes[i].key, canPreventDefault: true });
               if (!focused && !evt.defaultPrevented) navigation.navigate(state.routes[i].name);
             }}
-            style={{
-              alignItems: 'center',
-              gap: 3,
-              paddingVertical: 7,
-              paddingHorizontal: 12,
-              borderRadius: radius.pill,
-              backgroundColor: focused ? colors.accentRamp[100] : 'transparent',
-            }}
-          >
-            <Icon name={t.icon} color={fg} />
-            <Text style={{ fontFamily: fonts.body, fontSize: 10.5, letterSpacing: 0.3, color: fg }}>
-              {t.label}
-            </Text>
-          </Pressable>
+          />
         );
       })}
 
