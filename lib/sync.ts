@@ -9,7 +9,7 @@ import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from './config';
-import type { Receipt } from './data';
+import type { Receipt, ReceiptStatus, StatusKind } from './data';
 import {
   downloadPhoto,
   loadCloudPhotoIds,
@@ -32,6 +32,9 @@ type CloudReceipt = {
   war: number;
   hasPhoto: boolean;
   items: { name: string; price: number }[];
+  status?: string;
+  statusKind?: string | null;
+  statusAt?: number | null;
 };
 
 export async function getVaultKey(): Promise<string | null> {
@@ -149,6 +152,9 @@ function toCloud(r: Receipt, hasImage: boolean) {
     war: r.war,
     hasImage,
     items: r.items,
+    status: r.status ?? 'open',
+    statusKind: r.statusKind ?? null,
+    statusAt: r.statusAt ? r.statusAt.getTime() : null,
   };
 }
 
@@ -164,5 +170,8 @@ function fromCloud(c: CloudReceipt, imageUri: string | null): Receipt {
     war: c.war,
     imageUri,
     items: Array.isArray(c.items) ? c.items : [],
+    status: (c.status as ReceiptStatus) ?? 'open',
+    statusKind: (c.statusKind as StatusKind) ?? null,
+    statusAt: c.statusAt != null ? new Date(c.statusAt) : null,
   };
 }

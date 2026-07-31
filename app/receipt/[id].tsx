@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Animated, Image, PanResponder, Pressable, ScrollView, Share, View } from 'react-native';
 import { Body, Button, Heading, Icon, Kicker, Tag } from '../../components/ui';
-import { derive, fmtD, fmtDY, money } from '../../lib/data';
+import { derive, fmtD, fmtDY, money, statusOf } from '../../lib/data';
 import { dismiss } from '../../lib/nav';
 import { useVault } from '../../lib/store';
 import { colors, fonts, ink, radius, shadow, scrim } from '../../lib/theme';
@@ -12,7 +12,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export default function ReceiptDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { receipts } = useVault();
+  const { receipts, setStatus, flash } = useVault();
   const receipt = receipts.find((r) => String(r.id) === String(id));
 
   const close = () => dismiss(router);
@@ -45,6 +45,9 @@ export default function ReceiptDetail() {
   }
   const v = derive(receipt);
   const itemsSum = receipt.items.reduce((a, li) => a + li.price, 0);
+  const st = statusOf(receipt);
+  const kindLabel = receipt.statusKind === 'warranty' ? 'Warranty claim' : 'Return';
+  const whenLabel = receipt.statusAt ? ` · ${fmtD(receipt.statusAt)}` : '';
 
   const share = () => {
     const lines = [
@@ -196,8 +199,31 @@ export default function ReceiptDetail() {
             </View>
           )}
 
+          {/* ── Claim status ─────────────────────────────────────────── */}
+          {st !== 'open' && (
+            <View
+              style={{
+                marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 11,
+                backgroundColor: st === 'resolved' ? colors.accent2Ramp[100] : colors.accentRamp[100],
+                borderRadius: radius.md, paddingVertical: 12, paddingHorizontal: 14,
+              }}
+            >
+              <Heading style={{ fontSize: 20, color: st === 'resolved' ? colors.accent2Ramp[700] : colors.accentRamp[700] }}>
+                {st === 'resolved' ? '✓' : '⏳'}
+              </Heading>
+              <View style={{ flex: 1 }}>
+                <Heading style={{ fontSize: 15, color: st === 'resolved' ? colors.accent2Ramp[800] : colors.accentRamp[800] }}>
+                  {st === 'resolved' ? 'Resolved' : `${kindLabel} filed`}
+                </Heading>
+                <Body style={{ fontSize: 12, color: st === 'resolved' ? colors.accent2Ramp[700] : colors.accentRamp[700] }}>
+                  {st === 'resolved' ? `Refunded or handled${whenLabel}` : `Awaiting the outcome${whenLabel}`}
+                </Body>
+              </View>
+            </View>
+          )}
+
           {/* ── Actions ──────────────────────────────────────────────── */}
-          {(v.retLeft >= 0 || v.warLeft >= 0) && (
+          {st === 'open' && (v.retLeft >= 0 || v.warLeft >= 0) && (
             <View style={{ gap: 10, marginTop: 20 }}>
               {v.retLeft >= 0 && (
                 <Button
@@ -215,6 +241,43 @@ export default function ReceiptDetail() {
                   onPress={() => router.push(`/claim/${receipt.id}?kind=warranty`)}
                 />
               )}
+            </View>
+          )}
+
+          {st === 'filed' && (
+            <View style={{ gap: 10, marginTop: 14 }}>
+              <Button
+                title="Mark as resolved"
+                variant="primary"
+                block
+                onPress={() => {
+                  setStatus(receipt.id, 'resolved');
+                  flash('Marked resolved — nicely handled');
+                }}
+              />
+              <Button
+                title="Reopen"
+                variant="secondary"
+                block
+                onPress={() => {
+                  setStatus(receipt.id, 'open');
+                  flash('Reopened');
+                }}
+              />
+            </View>
+          )}
+
+          {st === 'resolved' && (
+            <View style={{ marginTop: 14 }}>
+              <Button
+                title="Reopen"
+                variant="secondary"
+                block
+                onPress={() => {
+                  setStatus(receipt.id, 'open');
+                  flash('Reopened');
+                }}
+              />
             </View>
           )}
 

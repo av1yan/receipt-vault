@@ -4,7 +4,7 @@ import { Image, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NextDeadlineCard } from '../../components/NextDeadlineCard';
 import { Body, Button, Card, Chip, Heading, Icon, Input, Kicker, Tag, TornReceiptCard } from '../../components/ui';
-import { derive, fmtD, money } from '../../lib/data';
+import { derive, fmtD, isActive, money, statusOf } from '../../lib/data';
 import { useVault } from '../../lib/store';
 import { colors, fonts, ink, radius, shadow } from '../../lib/theme';
 
@@ -23,7 +23,7 @@ export default function VaultScreen() {
     const q = query.trim().toLowerCase();
     return receipts.filter((r) => {
       const v = derive(r);
-      if (filter === 'Returns open' && v.retLeft < 0) return false;
+      if (filter === 'Returns open' && (!isActive(r) || v.retLeft < 0)) return false;
       if (filter === 'Under warranty' && v.warLeft < 0) return false;
       if (filter === 'This month' && r.date.getMonth() !== 6) return false;
       if (q) {
@@ -138,8 +138,11 @@ export default function VaultScreen() {
       <View style={{ gap: 10 }}>
         {list.map((r) => {
           const v = derive(r);
+          const st = statusOf(r);
           let badge: { label: string; variant: 'accent' | 'accent-2' } | null = null;
-          if (v.retLeft >= 0) badge = { label: `Return ${v.retLeft}d`, variant: 'accent-2' };
+          if (st === 'resolved') badge = { label: 'Resolved', variant: 'accent-2' };
+          else if (st === 'filed') badge = { label: 'Filed', variant: 'accent' };
+          else if (v.retLeft >= 0) badge = { label: `Return ${v.retLeft}d`, variant: 'accent-2' };
           else if (v.warLeft >= 0) badge = { label: 'Warranty', variant: 'accent' };
           return (
             <TornReceiptCard key={r.id} onPress={() => router.push(`/receipt/${r.id}`)}>

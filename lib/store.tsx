@@ -1,8 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
-import { SEED, type Receipt } from './data';
+import { SEED, type Receipt, type ReceiptStatus, type StatusKind } from './data';
 import { initDb, insertReceipt, loadReceipts } from './db';
-import { scheduleForReceipt } from './notifications';
+import { rescheduleAll, scheduleForReceipt } from './notifications';
 import { colors } from './theme';
 
 type NewReceipt = Omit<Receipt, 'id'>;
@@ -11,6 +11,7 @@ type VaultCtx = {
   receipts: Receipt[];
   addReceipt: (r: NewReceipt) => void;
   mergeReceipts: (remote: Receipt[]) => void;
+  setStatus: (id: number, status: ReceiptStatus, kind?: StatusKind | null) => void;
   toast: string;
   flash: (msg: string) => void;
 };
@@ -86,9 +87,32 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Advance a receipt's claim lifecycle (open → filed → resolved, or reopen).
+  const setStatus = useCallback((id: number, status: ReceiptStatus, kind: StatusKind | null = null) => {
+    setReceipts((prev) => {
+      const next = prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              status,
+              statusKind: status === 'open' ? null : (kind ?? r.statusKind ?? null),
+              statusAt: new Date(),
+            }
+          : r,
+      );
+      const updated = next.find((r) => r.id === id);
+      if (updated && persist.current) {
+        insertReceipt(updated).catch((e) => console.warn('[receipt-vault] status persist failed', e));
+      }
+      // Filed/resolved receipts should stop firing reminders (best-effort).
+      rescheduleAll(next).catch(() => {});
+      return next;
+    });
+  }, []);
+
   const value = useMemo(
-    () => ({ receipts, addReceipt, mergeReceipts, toast, flash }),
-    [receipts, addReceipt, mergeReceipts, toast, flash],
+    () => ({ receipts, addReceipt, mergeReceipts, setStatus, toast, flash }),
+    [receipts, addReceipt, mergeReceipts, setStatus, toast, flash],
   );
 
   // Hold the UI on a plain background until the first load settles, so the

@@ -4,7 +4,7 @@
 
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { addDays, derive, fmtDY, type Receipt } from './data';
+import { addDays, derive, fmtDY, isActive, type Receipt } from './data';
 
 // How far ahead of each deadline to remind.
 const RETURN_LEAD_DAYS = 3;
@@ -44,6 +44,7 @@ export async function hasPermission(): Promise<boolean> {
 type Job = { at: Date; title: string; body: string };
 
 function reminderJobs(r: Receipt): Job[] {
+  if (!isActive(r)) return []; // filed/resolved receipts no longer nag
   const v = derive(r);
   const now = new Date();
   const jobs: Job[] = [];

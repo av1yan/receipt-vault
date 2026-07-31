@@ -15,7 +15,7 @@ export default function ClaimScreen() {
   const kind: ClaimKind = kindParam === 'warranty' ? 'warranty' : 'return';
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { receipts } = useVault();
+  const { receipts, setStatus, flash } = useVault();
   const receipt = receipts.find((r) => String(r.id) === String(id));
 
   const [claim, setClaim] = useState<Claim | null>(null);
@@ -116,13 +116,24 @@ export default function ClaimScreen() {
 
           <View
             style={{
-              flexDirection: 'row', gap: 10,
               paddingHorizontal: 20, paddingTop: 12, paddingBottom: insets.bottom + 16,
-              backgroundColor: colors.bg,
+              backgroundColor: colors.bg, gap: 10,
             }}
           >
-            <Button title={copied ? 'Copied ✓' : 'Copy'} variant="secondary" style={{ flex: 1 }} onPress={onCopy} />
-            <Button title="Share" variant="primary" style={{ flex: 1 }} onPress={onShare} />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Button title={copied ? 'Copied ✓' : 'Copy'} variant="secondary" style={{ flex: 1 }} onPress={onCopy} />
+              <Button title="Share" variant="secondary" style={{ flex: 1 }} onPress={onShare} />
+            </View>
+            <Button
+              title={`Mark ${kind === 'warranty' ? 'warranty claim' : 'return'} as filed`}
+              variant="primary"
+              block
+              onPress={() => {
+                setStatus(receipt.id, 'filed', kind);
+                flash('Filed — track it from the receipt');
+                dismiss(router);
+              }}
+            />
           </View>
         </>
       )}

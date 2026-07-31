@@ -9,6 +9,12 @@ export const CATS = ['Groceries', 'Electronics', 'Home', 'Dining', 'Travel'] as 
 
 export type LineItem = { name: string; price: number };
 
+// Claim lifecycle: an open receipt still counts down its return/warranty
+// deadlines; once a claim is filed (or the receipt is resolved/refunded) it
+// leaves the active deadline list and is tracked separately.
+export type ReceiptStatus = 'open' | 'filed' | 'resolved';
+export type StatusKind = 'return' | 'warranty';
+
 export type Receipt = {
   id: number;
   merchant: string;
@@ -20,7 +26,15 @@ export type Receipt = {
   war: number; // warranty in months (0 = none)
   items: LineItem[];
   imageUri?: string | null; // local file path to the receipt photo (null = none)
+  status?: ReceiptStatus; // claim lifecycle (undefined = 'open')
+  statusKind?: StatusKind | null; // which claim was filed/resolved
+  statusAt?: Date | null; // when the status last changed
 };
+
+/** Current lifecycle status, defaulting legacy receipts to 'open'. */
+export const statusOf = (r: Receipt): ReceiptStatus => r.status ?? 'open';
+/** Only 'open' receipts count toward active deadlines/countdowns. */
+export const isActive = (r: Receipt): boolean => statusOf(r) === 'open';
 
 export type Derived = {
   retBy: Date | null;
@@ -74,6 +88,7 @@ export function nextDeadline(receipts: Receipt[]): NextDeadline | null {
     if (!best || c.daysLeft < best.daysLeft) best = c;
   };
   for (const r of receipts) {
+    if (!isActive(r)) continue; // filed/resolved receipts drop out of the countdown
     const v = derive(r);
     if (v.retLeft >= 0 && v.retBy) {
       consider({ receiptId: r.id, kind: 'return', merchant: r.merchant, date: v.retBy, daysLeft: v.retLeft });
