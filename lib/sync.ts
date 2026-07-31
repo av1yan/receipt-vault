@@ -61,6 +61,13 @@ export async function setVaultKey(key: string): Promise<void> {
   await SecureStore.setItemAsync(KEY_STORE, key.trim().toLowerCase());
 }
 
+/** The vault's public id = sha256(vaultKey); used as the email-import localpart. */
+export async function getVaultId(): Promise<string | null> {
+  const key = await getVaultKey();
+  if (!key) return null;
+  return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, key);
+}
+
 async function callSync(payload: Record<string, unknown>): Promise<any> {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/sync`, {
     method: 'POST',

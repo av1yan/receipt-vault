@@ -6,5 +6,10 @@
 // extract-receipt function is self-contained there. Move to a dedicated
 // Receipt Vault project later by swapping these two values.
 export const SUPABASE_URL = 'https://diifnystxiwurucolavk.supabase.co';
+
+// Domain that forwards inbound e-receipts to the `inbound-email` edge function.
+// Placeholder until you connect a mail provider (see EMAIL_IMPORT.md) — the app
+// shows <vaultId>@<this> as the user's private import address.
+export const INBOUND_DOMAIN = 'inbound.receiptvault.app';
 export const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpaWZueXN0eGl3dXJ1Y29sYXZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwNjk5MjAsImV4cCI6MjEwMDY0NTkyMH0.MrqJd3xCivx0veY75uua5OfLe1Fh-5VDYmVdgnfIUr8';

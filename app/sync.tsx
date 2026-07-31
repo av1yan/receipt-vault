@@ -5,10 +5,11 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Heading, Icon, Input, Kicker, Tag } from '../components/ui';
+import { INBOUND_DOMAIN } from '../lib/config';
 import { haptics } from '../lib/haptics';
 import { dismiss } from '../lib/nav';
 import { useVault } from '../lib/store';
-import { getVaultKey, setVaultKey, syncNow } from '../lib/sync';
+import { getVaultId, getVaultKey, setVaultKey, syncNow } from '../lib/sync';
 import { colors, fonts, ink, radius } from '../lib/theme';
 
 export default function SyncScreen() {
@@ -22,10 +23,21 @@ export default function SyncScreen() {
   const [lastCount, setLastCount] = useState<number | null>(null);
   const [codeInput, setCodeInput] = useState('');
   const [copied, setCopied] = useState(false);
+  const [vaultId, setVaultId] = useState<string | null>(null);
+  const [addrCopied, setAddrCopied] = useState(false);
 
   useEffect(() => {
     getVaultKey().then(setKey);
+    getVaultId().then(setVaultId);
   }, []);
+
+  const importAddr = vaultId ? `${vaultId}@${INBOUND_DOMAIN}` : '';
+  const copyAddr = async () => {
+    if (!importAddr) return;
+    await Clipboard.setStringAsync(importAddr);
+    setAddrCopied(true);
+    setTimeout(() => setAddrCopied(false), 1800);
+  };
 
   const synced = key !== null;
 
@@ -146,6 +158,34 @@ export default function SyncScreen() {
               </View>
               <Body style={{ fontSize: 12, color: ink(0.55) }}>
                 Enter this code on another device to see the same receipts. Keep it private — anyone with it can read your vault.
+              </Body>
+            </Card>
+          </View>
+        )}
+
+        {/* email import */}
+        {synced && vaultId && (
+          <View style={{ gap: 8 }}>
+            <Kicker style={{ color: ink(0.5), letterSpacing: 1 }}>Email import · beta</Kicker>
+            <Card style={{ padding: 14, gap: 10 }}>
+              <Body style={{ fontSize: 12.5, color: ink(0.6) }}>
+                Forward an e-receipt to your private address and it files itself into your vault (shows up
+                after the next sync).
+              </Body>
+              <View style={{ backgroundColor: colors.neutral[100], borderRadius: radius.md, padding: 10 }}>
+                <Body selectable style={{ fontFamily: fonts.body, fontSize: 11.5, color: colors.text }}>
+                  {importAddr}
+                </Body>
+              </View>
+              <Button
+                title={addrCopied ? 'Copied ✓' : 'Copy import address'}
+                variant="secondary"
+                block
+                onPress={copyAddr}
+              />
+              <Body style={{ fontSize: 11, color: ink(0.5) }}>
+                Setup required: point a mail provider at the import webhook (see EMAIL_IMPORT.md). Basic
+                parsing works today; set an AI key for full extraction.
               </Body>
             </Card>
           </View>
