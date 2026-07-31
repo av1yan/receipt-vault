@@ -6,6 +6,7 @@ import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Heading, Icon, Input, Kicker, Tag } from '../components/ui';
 import { haptics } from '../lib/haptics';
+import { dismiss } from '../lib/nav';
 import { useVault } from '../lib/store';
 import { getVaultKey, setVaultKey, syncNow } from '../lib/sync';
 import { colors, fonts, ink, radius } from '../lib/theme';
@@ -89,7 +90,7 @@ export default function SyncScreen() {
           flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         }}
       >
-        <Button title="Close" variant="ghost" onPress={() => router.back()} />
+        <Button title="Close" variant="ghost" onPress={() => dismiss(router)} />
         <Heading style={{ fontSize: 16 }}>Cloud backup</Heading>
         <View style={{ width: 56 }} />
       </View>

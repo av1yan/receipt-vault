@@ -6,6 +6,7 @@ import { ActivityIndicator, ScrollView, Share, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Heading, Kicker, Tag } from '../../components/ui';
 import { generateClaim, type Claim, type ClaimKind } from '../../lib/claim';
+import { dismiss } from '../../lib/nav';
 import { useVault } from '../../lib/store';
 import { colors, fonts, ink } from '../../lib/theme';
 
@@ -23,7 +24,7 @@ export default function ClaimScreen() {
   useEffect(() => {
     let alive = true;
     if (!receipt) {
-      router.back();
+      dismiss(router);
       return;
     }
     generateClaim(receipt, kind).then((c) => {
@@ -55,7 +56,7 @@ export default function ClaimScreen() {
           flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         }}
       >
-        <Button title="Close" variant="ghost" onPress={() => router.back()} />
+        <Button title="Close" variant="ghost" onPress={() => dismiss(router)} />
         <Heading style={{ fontSize: 16 }}>{title}</Heading>
         <View style={{ width: 56 }} />
       </View>

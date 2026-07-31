@@ -10,6 +10,7 @@ import { addDays, addMonths, fmtD, fmtDY, money, TODAY } from '../lib/data';
 import { extractReceipt, type ExtractedItem } from '../lib/extraction';
 import { haptics } from '../lib/haptics';
 import { persistImage } from '../lib/images';
+import { dismiss } from '../lib/nav';
 import { useVault } from '../lib/store';
 import { colors, fonts, ink, radius } from '../lib/theme';
 
@@ -60,7 +61,7 @@ export default function Capture() {
 
   useEffect(() => () => { alive.current = false; }, []);
 
-  const close = () => router.back();
+  const close = () => dismiss(router);
 
   // Shared path for a captured OR library-picked photo: relocate it to
   // permanent storage, send it to Claude vision for extraction, then land on

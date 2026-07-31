@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, Image, PanResponder, Pressable, ScrollView, Share, View } from 'react-native';
 import { Body, Button, Heading, Icon, Kicker, Tag } from '../../components/ui';
 import { derive, fmtD, fmtDY, money } from '../../lib/data';
+import { dismiss } from '../../lib/nav';
 import { useVault } from '../../lib/store';
 import { colors, fonts, ink, radius, shadow, scrim } from '../../lib/theme';
 
@@ -14,7 +15,7 @@ export default function ReceiptDetail() {
   const { receipts } = useVault();
   const receipt = receipts.find((r) => String(r.id) === String(id));
 
-  const close = () => router.back();
+  const close = () => dismiss(router);
 
   // Slide-up entrance + drag-to-dismiss (handle only, so the ScrollView still scrolls).
   const translateY = useRef(new Animated.Value(60)).current;
@@ -30,7 +31,7 @@ export default function ReceiptDetail() {
       },
       onPanResponderRelease: (_, g) => {
         if (g.dy > 120 || g.vy > 0.6) {
-          Animated.timing(translateY, { toValue: 800, duration: 200, useNativeDriver: true }).start(() => router.back());
+          Animated.timing(translateY, { toValue: 800, duration: 200, useNativeDriver: true }).start(close);
         } else {
           Animated.spring(translateY, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
         }
