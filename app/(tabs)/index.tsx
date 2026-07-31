@@ -68,7 +68,7 @@ export default function VaultScreen() {
             shadow.sm,
           ]}
         >
-          <Icon name="gear" size={21} color={colors.accent} />
+          <Icon name="sliders" size={21} color={colors.accent} />
         </Pressable>
 
         <View>
