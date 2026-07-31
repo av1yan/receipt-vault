@@ -5,8 +5,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Body, Button, Card, Chip, Field, Heading, Input, Kicker, Tag } from '../components/ui';
-import { addDays, addMonths, fmtD, fmtDY, TODAY } from '../lib/data';
+import { Body, Button, Card, Chip, Field, Heading, Icon, Input, Kicker, Tag } from '../components/ui';
+import { addDays, addMonths, fmtD, fmtDY, money, TODAY } from '../lib/data';
 import { extractReceipt, type ExtractedItem } from '../lib/extraction';
 import { haptics } from '../lib/haptics';
 import { persistImage } from '../lib/images';
@@ -131,6 +131,7 @@ export default function Capture() {
   if (f.war) parts.push('warranty runs to ' + fmtDY(addMonths(f.dateValue, f.war)));
   const derivedLine = parts.length ? parts.join(' · ') : 'No deadlines on this one — it just gets filed.';
   const confirmed = !SHOW_CONFIDENCE || f.totalEdited;
+  const totalNum = parseFloat(String(f.total).replace(/[^0-9.]/g, '')) || 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -150,15 +151,38 @@ export default function Capture() {
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 20, gap: 14 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
           {f.photo ? (
-            <Image source={{ uri: f.photo }} style={{ width: 56, height: 74, borderRadius: 12, backgroundColor: colors.neutral[200] }} />
+            <Image
+              source={{ uri: f.photo }}
+              style={{ width: 64, height: 82, borderRadius: 14, backgroundColor: colors.neutral[200], borderWidth: 1, borderColor: ink(0.08) }}
+            />
           ) : (
-            <View style={{ width: 56, height: 74, borderRadius: 12, backgroundColor: colors.neutral[200] }} />
+            <View
+              style={{
+                width: 64, height: 82, borderRadius: 14,
+                borderWidth: 1.5, borderStyle: 'dashed', borderColor: ink(0.18), backgroundColor: colors.surface,
+                alignItems: 'center', justifyContent: 'center', gap: 4,
+              }}
+            >
+              <Icon name="image" size={20} color={ink(0.32)} />
+              <Body style={{ fontSize: 8.5, letterSpacing: 0.5, textTransform: 'uppercase', color: ink(0.4) }}>No photo</Body>
+            </View>
           )}
-          <Body style={{ flex: 1, fontSize: 12.5, color: ink(0.6) }}>
-            {f.manual ? 'Manual entry — fill in what you have, photo optional.' : 'Read from the photo. Check anything flagged, then save.'}
-          </Body>
+          <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
+            <Tag
+              variant={f.manual ? 'neutral' : confirmed ? 'accent-2' : 'accent'}
+              textStyle={{ fontSize: 10.5 }}
+              style={{ paddingVertical: 2 }}
+            >
+              {f.manual ? 'Manual entry' : confirmed ? 'Scanned ✓' : 'Scanned · check flagged'}
+            </Tag>
+            <Body style={{ fontSize: 12.5, color: ink(0.6) }}>
+              {f.manual
+                ? 'Fill in what you have — the photo is optional.'
+                : 'We read this from your photo. Check anything highlighted, then save.'}
+            </Body>
+          </View>
         </View>
 
         <Field label="Merchant">
@@ -212,6 +236,29 @@ export default function Capture() {
           </View>
         </Field>
 
+        {f.items.length > 0 && (
+          <Card style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8, gap: 0 }}>
+            <Kicker style={{ color: ink(0.42), letterSpacing: 1.2, marginBottom: 2 }}>Scanned items</Kicker>
+            {f.items.map((it, i) => (
+              <View
+                key={i}
+                style={{
+                  flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                  paddingVertical: 9, borderBottomWidth: 1, borderStyle: 'dashed', borderBottomColor: ink(0.12),
+                }}
+              >
+                <Body style={{ flex: 1, fontSize: 13.5, paddingRight: 12 }}>{it.name}</Body>
+                <Body style={{ fontFamily: fonts.heading, fontSize: 13.5, color: ink(0.85) }}>
+                  {it.price != null ? money(it.price) : '—'}
+                </Body>
+              </View>
+            ))}
+            <Body style={{ fontSize: 11, color: ink(0.42), paddingVertical: 9 }}>
+              Read from the photo — the total above is what gets saved.
+            </Body>
+          </Card>
+        )}
+
         <Card elevation="none" style={{ backgroundColor: colors.accent2Ramp[100], gap: 4, padding: 14 }}>
           <Kicker style={{ color: colors.accent2Ramp[800], letterSpacing: 1 }}>We'll remind you</Kicker>
           <Body style={{ fontSize: 13.5, color: colors.accent2Ramp[900] }}>{derivedLine}</Body>
@@ -219,7 +266,12 @@ export default function Capture() {
       </ScrollView>
 
       <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: insets.bottom + 16, backgroundColor: colors.bg }}>
-        <Button title="Save to vault" variant="primary" block onPress={save} />
+        <Button
+          title={totalNum > 0 ? `Save to vault · ${money(totalNum)}` : 'Save to vault'}
+          variant="primary"
+          block
+          onPress={save}
+        />
       </View>
     </View>
   );
