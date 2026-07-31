@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +11,7 @@ import { CAT_COLOR, colors, fonts, ink } from '../../lib/theme';
 
 export default function SpendingScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { receipts, flash, budgets } = useVault();
 
   const { monthTotal, monthCount, cats } = useMemo(() => {
@@ -111,11 +113,12 @@ export default function SpendingScreen() {
         ))}
       </Card>
 
+      <Button title="View insights" variant="secondary" block style={{ marginTop: 12 }} onPress={() => router.push('/insights')} />
+
       <Button
         title="Export CSV"
         variant="secondary"
         block
-        style={{ marginTop: 12 }}
         onPress={async () => {
           const res = await exportReceiptsCsv(receipts);
           if (res === 'shared') {
