@@ -3,6 +3,8 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Heading, Kicker, ProgressBar } from '../../components/ui';
 import { money } from '../../lib/data';
+import { exportReceiptsCsv } from '../../lib/export';
+import { haptics } from '../../lib/haptics';
 import { useVault } from '../../lib/store';
 import { CAT_COLOR, colors, fonts, ink } from '../../lib/theme';
 
@@ -85,7 +87,19 @@ export default function SpendingScreen() {
         variant="secondary"
         block
         style={{ marginTop: 12 }}
-        onPress={() => flash(`CSV with ${receipts.length} receipts sent to your email`)}
+        onPress={async () => {
+          const res = await exportReceiptsCsv(receipts);
+          if (res === 'shared') {
+            haptics.success();
+            flash(`Exported ${receipts.length} receipts`);
+          } else if (res === 'empty') {
+            flash('No receipts to export yet');
+          } else if (res === 'unavailable') {
+            flash('Sharing isn’t available on this device');
+          } else {
+            flash('Export failed — please try again');
+          }
+        }}
       />
     </ScrollView>
   );
