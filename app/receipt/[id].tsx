@@ -130,14 +130,14 @@ export default function ReceiptDetail() {
             <DeadlineCard
               tone="return"
               label="Return window"
-              active={v.retLeft >= 0}
+              active={v.retLeft >= 0 && st === 'open'}
               value={v.retLeft >= 0 ? `${v.retLeft}d` : 'Closed'}
               note={v.retLeft >= 0 ? (v.retBy ? `by ${fmtD(v.retBy)}` : 'open') : 'window passed'}
             />
             <DeadlineCard
               tone="warranty"
               label="Warranty"
-              active={v.warLeft >= 0}
+              active={v.warLeft >= 0 && st === 'open'}
               value={v.warLeft >= 0 ? `${v.warLeft}d` : v.warTo ? 'Expired' : 'None'}
               note={
                 v.warLeft >= 0

@@ -15,7 +15,12 @@ export function monthlyTotals(receipts: Receipt[], months = 6): MonthPoint[] {
     by.set(k, (by.get(k) ?? 0) + r.total);
   }
   const keys = [...by.keys()].sort().slice(-months);
-  return keys.map((k) => ({ key: k, label: MON[Number(k.slice(5, 7)) - 1], total: by.get(k) ?? 0 }));
+  // Disambiguate the month labels with a 2-digit year when the window spans years.
+  const multiYear = new Set(keys.map((k) => k.slice(0, 4))).size > 1;
+  return keys.map((k) => {
+    const label = MON[Number(k.slice(5, 7)) - 1] + (multiYear ? ` '${k.slice(2, 4)}` : '');
+    return { key: k, label, total: by.get(k) ?? 0 };
+  });
 }
 
 export type MerchantAgg = { merchant: string; total: number; count: number };

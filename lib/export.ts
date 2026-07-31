@@ -5,9 +5,12 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { derive, fmtDY, statusOf, type Receipt } from './data';
 
-/** Quote a CSV field only when it contains a comma, quote, or newline. */
+/** CSV-escape a field: neutralize spreadsheet formula injection, then quote as
+ *  needed. A value beginning with = + - @ (or tab/CR) can execute when the file
+ *  is opened in Excel/Sheets/Numbers, so it's prefixed with an apostrophe. */
 function esc(v: string | number): string {
-  const s = String(v ?? '');
+  let s = String(v ?? '');
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

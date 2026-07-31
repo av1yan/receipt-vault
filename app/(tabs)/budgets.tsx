@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Card, Heading, Input, Kicker, ProgressBar } from '../../components/ui';
@@ -17,6 +17,24 @@ export default function BudgetsTab() {
   const [vals, setVals] = useState<Record<string, string>>(() =>
     Object.fromEntries(CATS.map((c) => [c, budgets[c] ? String(budgets[c]) : ''])),
   );
+
+  // Backfill inputs once budgets finish loading from disk (in case this tab
+  // mounted before the async load) — only fills empty fields, never clobbers
+  // a value being typed.
+  useEffect(() => {
+    if (budgets[MONTHLY]) setGoalVal((v) => (v === '' ? String(budgets[MONTHLY]) : v));
+    setVals((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const c of CATS) {
+        if ((next[c] ?? '') === '' && budgets[c]) {
+          next[c] = String(budgets[c]);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [budgets]);
 
   const { byCat, monthSpend, monthCount } = useMemo(() => {
     const july = receipts.filter((r) => r.date.getMonth() === 6);

@@ -30,6 +30,12 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Whether writes should hit SQLite. Flipped off if the DB can't open.
   const persist = useRef(true);
+  // Always-current receipts, so mutators can compute the next array outside the
+  // state updater (updaters must be pure / may run twice).
+  const receiptsRef = useRef<Receipt[]>([]);
+  receiptsRef.current = receipts;
+  // Monotonic id source so two receipts added in the same millisecond can't collide.
+  const lastId = useRef(0);
 
   // Load from SQLite once; fall back to in-memory seed if unavailable.
   useEffect(() => {
@@ -62,14 +68,12 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setReimbursable = useCallback((id: number, value: boolean) => {
-    setReceipts((prev) => {
-      const next = prev.map((r) => (r.id === id ? { ...r, reimbursable: value } : r));
-      const updated = next.find((r) => r.id === id);
-      if (updated && persist.current) {
-        insertReceipt(updated).catch((e) => console.warn('[receipt-vault] reimbursable persist failed', e));
-      }
-      return next;
-    });
+    const next = receiptsRef.current.map((r) => (r.id === id ? { ...r, reimbursable: value } : r));
+    setReceipts(next);
+    const updated = next.find((r) => r.id === id);
+    if (updated && persist.current) {
+      insertReceipt(updated).catch((e) => console.warn('[receipt-vault] reimbursable persist failed', e));
+    }
   }, []);
 
   // Category budgets live in a small on-disk JSON file.
@@ -94,7 +98,9 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addReceipt = useCallback((r: NewReceipt) => {
-    const receipt: Receipt = { ...r, id: Date.now() };
+    const id = Math.max(Date.now(), lastId.current + 1);
+    lastId.current = id;
+    const receipt: Receipt = { ...r, id };
     setReceipts((prev) => [receipt, ...prev]); // optimistic
     if (persist.current) {
       insertReceipt(receipt).catch((e) => console.warn('[receipt-vault] insert failed', e));
@@ -114,31 +120,35 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
       );
     });
     if (persist.current) {
-      for (const r of remote) insertReceipt(r).catch((e) => console.warn('[receipt-vault] merge persist failed', e));
+      // Persist sequentially — insertReceipt wraps each write in its own
+      // transaction on the shared connection, so overlapping them can fail.
+      (async () => {
+        for (const r of remote) {
+          try {
+            await insertReceipt(r);
+          } catch (e) {
+            console.warn('[receipt-vault] merge persist failed', e);
+          }
+        }
+      })();
     }
   }, []);
 
   // Advance a receipt's claim lifecycle (open → filed → resolved, or reopen).
   const setStatus = useCallback((id: number, status: ReceiptStatus, kind: StatusKind | null = null) => {
-    setReceipts((prev) => {
-      const next = prev.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              status,
-              statusKind: status === 'open' ? null : (kind ?? r.statusKind ?? null),
-              statusAt: new Date(),
-            }
-          : r,
-      );
-      const updated = next.find((r) => r.id === id);
-      if (updated && persist.current) {
-        insertReceipt(updated).catch((e) => console.warn('[receipt-vault] status persist failed', e));
-      }
-      // Filed/resolved receipts should stop firing reminders (best-effort).
-      rescheduleAll(next).catch(() => {});
-      return next;
-    });
+    const at = new Date();
+    const next = receiptsRef.current.map((r) =>
+      r.id === id
+        ? { ...r, status, statusKind: status === 'open' ? null : (kind ?? r.statusKind ?? null), statusAt: at }
+        : r,
+    );
+    setReceipts(next);
+    const updated = next.find((r) => r.id === id);
+    if (updated && persist.current) {
+      insertReceipt(updated).catch((e) => console.warn('[receipt-vault] status persist failed', e));
+    }
+    // Filed/resolved receipts should stop firing reminders (best-effort).
+    rescheduleAll(next).catch(() => {});
   }, []);
 
   const value = useMemo(

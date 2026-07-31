@@ -65,9 +65,15 @@ export async function initDb(): Promise<void> {
     await db.execAsync('ALTER TABLE receipts ADD COLUMN reimbursable INTEGER');
   }
 
-  const row = await db.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM receipts');
-  if ((row?.n ?? 0) === 0) {
-    for (const r of SEED) await insertReceipt(r);
+  // Seed the demo receipts exactly once, on a genuinely fresh database — guarded
+  // by user_version so emptying the vault later doesn't resurrect the demo data.
+  const ver = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
+  if ((ver?.user_version ?? 0) < 1) {
+    const row = await db.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM receipts');
+    if ((row?.n ?? 0) === 0) {
+      for (const r of SEED) await insertReceipt(r);
+    }
+    await db.execAsync('PRAGMA user_version = 1');
   }
 }
 

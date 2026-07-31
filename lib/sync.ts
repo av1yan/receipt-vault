@@ -114,11 +114,15 @@ export async function syncNow(local: Receipt[]): Promise<Receipt[]> {
   });
   const remote: CloudReceipt[] = data.receipts ?? [];
 
-  // 3. Fetch signed download URLs for cloud photos we don't have locally.
+  // 3. Fetch signed download URLs for cloud photos whose file we don't actually
+  //    have on disk (a set imageUri isn't proof the file still exists).
   const localById = new Map(local.map((r) => [r.id, r] as const));
-  const missing = remote.filter(
-    (c) => c.hasPhoto && !inCloud.has(c.id) && !localById.get(c.id)?.imageUri,
-  );
+  const missing: CloudReceipt[] = [];
+  for (const c of remote) {
+    if (!c.hasPhoto || inCloud.has(c.id)) continue;
+    if (await localPhotoExists(localById.get(c.id)?.imageUri)) continue;
+    missing.push(c);
+  }
   let urls: Record<string, string> = {};
   if (missing.length) {
     try {
