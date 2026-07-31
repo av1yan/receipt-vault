@@ -1,6 +1,6 @@
 import { Tabs, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Pressable, View } from 'react-native';
+import { Animated, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, IconName, Toast } from '../../components/ui';
 import { useVault } from '../../lib/store';
@@ -21,18 +21,20 @@ const LABEL_OFF = 'rgba(32,30,29,0.45)'; // ink(0.45)
 function TabButton({ t, focused, onPress }: { t: (typeof TABS)[number]; focused: boolean; onPress: () => void }) {
   const v = useRef(new Animated.Value(focused ? 1 : 0)).current;
   useEffect(() => {
-    Animated.timing(v, {
+    Animated.spring(v, {
       toValue: focused ? 1 : 0,
-      duration: 220,
-      easing: Easing.out(Easing.cubic),
+      friction: 6, // lower = bouncier; overshoots slightly past the target
+      tension: 140,
       useNativeDriver: false, // interpolating backgroundColor / color
     }).start();
   }, [focused, v]);
 
-  const bg = v.interpolate({ inputRange: [0, 1], outputRange: [PILL_OFF, PILL_ON] });
-  const label = v.interpolate({ inputRange: [0, 1], outputRange: [LABEL_OFF, LABEL_ON] });
-  const scale = v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] });
-  const offOpacity = v.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
+  // Clamp color/background so the spring's overshoot doesn't over-saturate them;
+  // let the scale ride the overshoot for the bounce.
+  const bg = v.interpolate({ inputRange: [0, 1], outputRange: [PILL_OFF, PILL_ON], extrapolate: 'clamp' });
+  const label = v.interpolate({ inputRange: [0, 1], outputRange: [LABEL_OFF, LABEL_ON], extrapolate: 'clamp' });
+  const scale = v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.09] });
+  const offOpacity = v.interpolate({ inputRange: [0, 1], outputRange: [1, 0], extrapolate: 'clamp' });
 
   return (
     <Pressable onPress={onPress} hitSlop={6}>
