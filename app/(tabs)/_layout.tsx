@@ -10,6 +10,7 @@ const TABS: { name: string; label: string; icon: IconName }[] = [
   { name: 'index', label: 'Vault', icon: 'vault' },
   { name: 'deadlines', label: 'Deadlines', icon: 'clock' },
   { name: 'spending', label: 'Spending', icon: 'bars' },
+  { name: 'budgets', label: 'Budgets', icon: 'wallet' },
 ];
 
 // Colors as rgba so Animated can interpolate cleanly between them.
@@ -40,7 +41,7 @@ function TabButton({ t, focused, onPress }: { t: (typeof TABS)[number]; focused:
     <Pressable onPress={onPress} hitSlop={6}>
       <Animated.View
         style={{
-          alignItems: 'center', gap: 3, paddingVertical: 7, paddingHorizontal: 12,
+          alignItems: 'center', gap: 3, paddingVertical: 7, paddingHorizontal: 9,
           borderRadius: radius.pill, backgroundColor: bg, transform: [{ scale }],
         }}
       >
@@ -78,7 +79,7 @@ function PillTabBar({ state, navigation }: { state: any; navigation: any }) {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingHorizontal: 22,
+          paddingHorizontal: 14,
         },
         shadow.lg,
       ]}
@@ -104,8 +105,8 @@ function PillTabBar({ state, navigation }: { state: any; navigation: any }) {
         onPress={() => router.push('/capture')}
         style={({ pressed }) => [
           {
-            width: 50,
-            height: 50,
+            width: 46,
+            height: 46,
             borderRadius: radius.pill,
             backgroundColor: colors.accent,
             alignItems: 'center',
@@ -115,7 +116,7 @@ function PillTabBar({ state, navigation }: { state: any; navigation: any }) {
           shadow.md,
         ]}
       >
-        <Icon name="plus" size={26} color="#fff" />
+        <Icon name="plus" size={24} color="#fff" />
       </Pressable>
     </View>
   );
@@ -134,6 +135,7 @@ export default function TabsLayout() {
         <Tabs.Screen name="index" />
         <Tabs.Screen name="deadlines" />
         <Tabs.Screen name="spending" />
+        <Tabs.Screen name="budgets" />
       </Tabs>
 
       <Toast message={toast} bottom={insets.bottom + 84} />

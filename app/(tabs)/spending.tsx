@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +10,6 @@ import { CAT_COLOR, colors, fonts, ink } from '../../lib/theme';
 
 export default function SpendingScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { receipts, flash, budgets } = useVault();
 
   const { monthTotal, monthCount, cats } = useMemo(() => {
@@ -22,8 +20,12 @@ export default function SpendingScreen() {
       byCat[r.cat] = (byCat[r.cat] || 0) + r.total;
     });
     const max = Math.max(1, ...Object.values(byCat));
-    // Show categories that have spend this month OR a budget set.
-    const names = new Set<string>([...Object.keys(byCat), ...Object.keys(budgets)]);
+    // Show categories that have spend this month OR a budget set (excluding the
+    // reserved overall-goal key, which is managed on the Budgets tab).
+    const names = new Set<string>([
+      ...Object.keys(byCat),
+      ...Object.keys(budgets).filter((k) => !k.startsWith('__')),
+    ]);
     const catList = [...names]
       .map((k) => {
         const spend = byCat[k] || 0;
@@ -109,27 +111,25 @@ export default function SpendingScreen() {
         ))}
       </Card>
 
-      <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-        <Button title="Set budgets" variant="secondary" style={{ flex: 1 }} onPress={() => router.push('/budgets')} />
-        <Button
-          title="Export CSV"
-          variant="secondary"
-          style={{ flex: 1 }}
-          onPress={async () => {
-            const res = await exportReceiptsCsv(receipts);
-            if (res === 'shared') {
-              haptics.success();
-              flash(`Exported ${receipts.length} receipts`);
-            } else if (res === 'empty') {
-              flash('No receipts to export yet');
-            } else if (res === 'unavailable') {
-              flash('Sharing isn’t available on this device');
-            } else {
-              flash('Export failed — please try again');
-            }
-          }}
-        />
-      </View>
+      <Button
+        title="Export CSV"
+        variant="secondary"
+        block
+        style={{ marginTop: 12 }}
+        onPress={async () => {
+          const res = await exportReceiptsCsv(receipts);
+          if (res === 'shared') {
+            haptics.success();
+            flash(`Exported ${receipts.length} receipts`);
+          } else if (res === 'empty') {
+            flash('No receipts to export yet');
+          } else if (res === 'unavailable') {
+            flash('Sharing isn’t available on this device');
+          } else {
+            flash('Export failed — please try again');
+          }
+        }}
+      />
     </ScrollView>
   );
 }

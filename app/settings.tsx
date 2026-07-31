@@ -76,12 +76,6 @@ export default function SettingsScreen() {
             subtitle="Sync, sync code & email import"
             onPress={() => router.push('/sync')}
           />
-          <NavRow
-            icon="bars"
-            title="Category budgets"
-            subtitle="Monthly limits per category"
-            onPress={() => router.push('/budgets')}
-          />
         </View>
 
         <View style={{ gap: 10 }}>

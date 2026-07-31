@@ -389,11 +389,18 @@ export function Icon({ name, size = 21, color = colors.text }: { name: IconName;
         </>
       )}
       {name === 'chevron' && <Path d="M9 6l6 6-6 6" {...p} />}
+      {name === 'wallet' && (
+        <>
+          <Rect x={3} y={6.5} width={18} height={12} rx={2.6} {...p} />
+          <Path d="M3 10.5h18" {...p} />
+          <Circle cx={16.6} cy={14.6} r={1.3} {...p} />
+        </>
+      )}
     </Svg>
   );
 }
 export type IconName =
-  | 'vault' | 'clock' | 'bars' | 'plus' | 'bell' | 'cloud' | 'image' | 'share' | 'gear' | 'chevron';
+  | 'vault' | 'clock' | 'bars' | 'plus' | 'bell' | 'cloud' | 'image' | 'share' | 'gear' | 'chevron' | 'wallet';
 
 // ── Toast ────────────────────────────────────────────────────────────────────
 export function Toast({ message, bottom = 108 }: { message: string; bottom?: number }) {
