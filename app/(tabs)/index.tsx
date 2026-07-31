@@ -55,8 +55,8 @@ export default function VaultScreen() {
           }}
         />
         <Pressable
-          onPress={() => router.push('/sync')}
-          accessibilityLabel="Cloud backup"
+          onPress={() => router.push('/settings')}
+          accessibilityLabel="Settings"
           style={({ pressed }) => [
             {
               position: 'absolute', right: 0, top: 0, zIndex: 5,
@@ -68,7 +68,7 @@ export default function VaultScreen() {
             shadow.sm,
           ]}
         >
-          <Icon name="cloud" size={21} color={colors.accent} />
+          <Icon name="gear" size={21} color={colors.accent} />
         </Pressable>
 
         <View>

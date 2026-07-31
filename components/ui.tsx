@@ -379,10 +379,21 @@ export function Icon({ name, size = 21, color = colors.text }: { name: IconName;
           <Path d="M8.1 10.9l6.8-3.8M8.1 13.1l6.8 3.8" {...p} />
         </>
       )}
+      {name === 'gear' && (
+        <>
+          <Circle cx={12} cy={12} r={3.2} {...p} />
+          <Path
+            d="M12 2.6v2.6M12 18.8v2.6M21.4 12h-2.6M5.2 12H2.6M18.6 5.4l-1.8 1.8M7.2 16.8l-1.8 1.8M18.6 18.6l-1.8-1.8M7.2 7.2L5.4 5.4"
+            {...p}
+          />
+        </>
+      )}
+      {name === 'chevron' && <Path d="M9 6l6 6-6 6" {...p} />}
     </Svg>
   );
 }
-export type IconName = 'vault' | 'clock' | 'bars' | 'plus' | 'bell' | 'cloud' | 'image' | 'share';
+export type IconName =
+  | 'vault' | 'clock' | 'bars' | 'plus' | 'bell' | 'cloud' | 'image' | 'share' | 'gear' | 'chevron';
 
 // ── Toast ────────────────────────────────────────────────────────────────────
 export function Toast({ message, bottom = 108 }: { message: string; bottom?: number }) {
