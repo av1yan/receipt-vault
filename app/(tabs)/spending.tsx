@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,7 +11,8 @@ import { CAT_COLOR, colors, fonts, ink } from '../../lib/theme';
 
 export default function SpendingScreen() {
   const insets = useSafeAreaInsets();
-  const { receipts, flash } = useVault();
+  const router = useRouter();
+  const { receipts, flash, budgets } = useVault();
 
   const { monthTotal, monthCount, cats } = useMemo(() => {
     const july = receipts.filter((r) => r.date.getMonth() === 6);
@@ -20,16 +22,31 @@ export default function SpendingScreen() {
       byCat[r.cat] = (byCat[r.cat] || 0) + r.total;
     });
     const max = Math.max(1, ...Object.values(byCat));
-    const catList = Object.keys(byCat)
-      .sort((a, b) => byCat[b] - byCat[a])
-      .map((k) => ({
-        name: k,
-        amount: money(byCat[k]),
-        pct: `${Math.round((100 * byCat[k]) / max)}%`,
-        color: CAT_COLOR[k] || colors.accentRamp[500],
-      }));
+    // Show categories that have spend this month OR a budget set.
+    const names = new Set<string>([...Object.keys(byCat), ...Object.keys(budgets)]);
+    const catList = [...names]
+      .map((k) => {
+        const spend = byCat[k] || 0;
+        const budget = budgets[k] || 0;
+        const over = budget > 0 && spend > budget;
+        return {
+          name: k,
+          spend,
+          amount: money(spend),
+          budgetLabel: budget > 0 ? ` of ${money(budget)}` : '',
+          note: budget > 0 ? (over ? `Over by ${money(spend - budget)}` : `${money(budget - spend)} left`) : '',
+          over,
+          dot: CAT_COLOR[k] || colors.accentRamp[500],
+          bar: over ? colors.accent : CAT_COLOR[k] || colors.accentRamp[500],
+          pct:
+            budget > 0
+              ? `${Math.min(100, Math.round((100 * spend) / budget))}%`
+              : `${Math.round((100 * spend) / max)}%`,
+        };
+      })
+      .sort((a, b) => b.spend - a.spend);
     return { monthTotal: money(sum), monthCount: july.length, cats: catList };
-  }, [receipts]);
+  }, [receipts, budgets]);
 
   return (
     <ScrollView
@@ -73,34 +90,46 @@ export default function SpendingScreen() {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
-              <View style={{ width: 9, height: 9, borderRadius: 999, backgroundColor: c.color }} />
+              <View style={{ width: 9, height: 9, borderRadius: 999, backgroundColor: c.dot }} />
               <Body style={{ flex: 1, fontSize: 13.5 }}>{c.name}</Body>
-              <Body style={{ fontFamily: fonts.heading, fontSize: 14, color: ink(0.85) }}>{c.amount}</Body>
+              <Body style={{ fontFamily: fonts.heading, fontSize: 14, color: ink(0.85) }}>
+                {c.amount}
+                {c.budgetLabel ? (
+                  <Body style={{ fontFamily: fonts.body, fontSize: 12, color: ink(0.4) }}>{c.budgetLabel}</Body>
+                ) : null}
+              </Body>
             </View>
-            <ProgressBar pct={c.pct} color={c.color} height={8} />
+            <ProgressBar pct={c.pct} color={c.bar} height={8} />
+            {c.note ? (
+              <Body style={{ fontSize: 11, textAlign: 'right', color: c.over ? colors.accent : ink(0.45) }}>
+                {c.note}
+              </Body>
+            ) : null}
           </View>
         ))}
       </Card>
 
-      <Button
-        title="Export CSV"
-        variant="secondary"
-        block
-        style={{ marginTop: 12 }}
-        onPress={async () => {
-          const res = await exportReceiptsCsv(receipts);
-          if (res === 'shared') {
-            haptics.success();
-            flash(`Exported ${receipts.length} receipts`);
-          } else if (res === 'empty') {
-            flash('No receipts to export yet');
-          } else if (res === 'unavailable') {
-            flash('Sharing isn’t available on this device');
-          } else {
-            flash('Export failed — please try again');
-          }
-        }}
-      />
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+        <Button title="Set budgets" variant="secondary" style={{ flex: 1 }} onPress={() => router.push('/budgets')} />
+        <Button
+          title="Export CSV"
+          variant="secondary"
+          style={{ flex: 1 }}
+          onPress={async () => {
+            const res = await exportReceiptsCsv(receipts);
+            if (res === 'shared') {
+              haptics.success();
+              flash(`Exported ${receipts.length} receipts`);
+            } else if (res === 'empty') {
+              flash('No receipts to export yet');
+            } else if (res === 'unavailable') {
+              flash('Sharing isn’t available on this device');
+            } else {
+              flash('Export failed — please try again');
+            }
+          }}
+        />
+      </View>
     </ScrollView>
   );
 }

@@ -223,12 +223,14 @@ export function Input({
   placeholder,
   borderColor,
   style,
+  keyboardType,
 }: {
   value?: string;
   onChangeText?: (t: string) => void;
   placeholder?: string;
   borderColor?: string;
   style?: StyleProp<TextStyle>;
+  keyboardType?: 'default' | 'decimal-pad' | 'number-pad';
 }) {
   return (
     <TextInput
@@ -236,6 +238,7 @@ export function Input({
       onChangeText={onChangeText}
       placeholder={placeholder}
       placeholderTextColor={ink(0.4)}
+      keyboardType={keyboardType}
       style={[
         {
           minHeight: 36,

@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
+import { loadBudgets, saveBudgets, type Budgets } from './budgets';
 import { SEED, type Receipt, type ReceiptStatus, type StatusKind } from './data';
 import { initDb, insertReceipt, loadReceipts } from './db';
 import { rescheduleAll, scheduleForReceipt } from './notifications';
@@ -12,6 +13,8 @@ type VaultCtx = {
   addReceipt: (r: NewReceipt) => void;
   mergeReceipts: (remote: Receipt[]) => void;
   setStatus: (id: number, status: ReceiptStatus, kind?: StatusKind | null) => void;
+  budgets: Budgets;
+  setBudget: (cat: string, amount: number) => void;
   toast: string;
   flash: (msg: string) => void;
 };
@@ -20,6 +23,7 @@ const Ctx = createContext<VaultCtx | null>(null);
 
 export function VaultProvider({ children }: { children: React.ReactNode }) {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [budgets, setBudgets] = useState<Budgets>({});
   const [ready, setReady] = useState(false);
   const [toast, setToast] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -54,6 +58,21 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     return () => {
       alive = false;
     };
+  }, []);
+
+  // Category budgets live in a small on-disk JSON file.
+  useEffect(() => {
+    loadBudgets().then(setBudgets).catch(() => {});
+  }, []);
+
+  const setBudget = useCallback((cat: string, amount: number) => {
+    setBudgets((prev) => {
+      const next = { ...prev };
+      if (amount > 0) next[cat] = amount;
+      else delete next[cat];
+      saveBudgets(next);
+      return next;
+    });
   }, []);
 
   const flash = useCallback((msg: string) => {
@@ -111,8 +130,8 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ receipts, addReceipt, mergeReceipts, setStatus, toast, flash }),
-    [receipts, addReceipt, mergeReceipts, setStatus, toast, flash],
+    () => ({ receipts, addReceipt, mergeReceipts, setStatus, budgets, setBudget, toast, flash }),
+    [receipts, addReceipt, mergeReceipts, setStatus, budgets, setBudget, toast, flash],
   );
 
   // Hold the UI on a plain background until the first load settles, so the
