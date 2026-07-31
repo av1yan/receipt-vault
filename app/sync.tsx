@@ -2,9 +2,10 @@ import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Heading, Icon, Input, Kicker, Tag } from '../components/ui';
+import { haptics } from '../lib/haptics';
 import { useVault } from '../lib/store';
 import { getVaultKey, setVaultKey, syncNow } from '../lib/sync';
 import { colors, fonts, ink, radius } from '../lib/theme';
@@ -34,8 +35,10 @@ export default function SyncScreen() {
       mergeReceipts(remote);
       setLastCount(remote.length);
       setKey(await getVaultKey());
+      haptics.success();
       flash(`Backed up · ${remote.length} receipts in the cloud`);
     } catch (e) {
+      haptics.error();
       flash('Sync failed — check your connection');
       console.warn('[receipt-vault] sync failed', e);
     } finally {
@@ -57,8 +60,10 @@ export default function SyncScreen() {
       setLastCount(remote.length);
       setKey(await getVaultKey());
       setCodeInput('');
+      haptics.success();
       flash(`Restored · ${remote.length} receipts pulled in`);
     } catch (e) {
+      haptics.error();
       flash('Restore failed — check the code & connection');
       console.warn('[receipt-vault] restore failed', e);
     } finally {
@@ -102,15 +107,24 @@ export default function SyncScreen() {
             <Icon name="cloud" size={26} color={synced ? colors.accent2Ramp[100] : colors.accentRamp[100]} />
             <View style={{ flex: 1 }}>
               <Heading style={{ fontSize: 20, color: synced ? colors.accent2Ramp[100] : colors.accentRamp[100] }}>
-                {synced ? 'Backed up' : 'Not backed up yet'}
+                {busy ? 'Syncing…' : synced ? 'Backed up' : 'Not backed up yet'}
               </Heading>
-              <Body style={{ fontSize: 12.5, color: synced ? colors.accent2Ramp[200] : colors.accentRamp[200], marginTop: 2 }}>
-                {lastCount !== null
-                  ? `${lastCount} receipts in the cloud · just now`
-                  : synced
-                    ? 'Tap below to sync your latest'
-                    : 'Back up to protect your receipts'}
-              </Body>
+              {busy ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 3 }}>
+                  <ActivityIndicator size="small" color={synced ? colors.accent2Ramp[100] : colors.accentRamp[100]} />
+                  <Body style={{ fontSize: 12.5, color: synced ? colors.accent2Ramp[200] : colors.accentRamp[200] }}>
+                    Uploading photos & syncing…
+                  </Body>
+                </View>
+              ) : (
+                <Body style={{ fontSize: 12.5, color: synced ? colors.accent2Ramp[200] : colors.accentRamp[200], marginTop: 2 }}>
+                  {lastCount !== null
+                    ? `${lastCount} receipts in the cloud · just now`
+                    : synced
+                      ? 'Tap below to sync your latest'
+                      : 'Back up to protect your receipts'}
+                </Body>
+              )}
             </View>
           </View>
         </View>

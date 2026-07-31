@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NextDeadlineCard } from '../../components/NextDeadlineCard';
-import { Body, Chip, Heading, Icon, Input, Kicker, Tag, TornReceiptCard } from '../../components/ui';
+import { Body, Button, Card, Chip, Heading, Icon, Input, Kicker, Tag, TornReceiptCard } from '../../components/ui';
 import { derive, fmtD, money } from '../../lib/data';
 import { useVault } from '../../lib/store';
 import { colors, fonts, ink, radius, shadow } from '../../lib/theme';
@@ -91,7 +91,49 @@ export default function VaultScreen() {
         ))}
       </View>
 
-      <Kicker style={{ color: ink(0.5), letterSpacing: 1 }}>{filter === 'All' ? 'Recent' : filter}</Kicker>
+      {list.length > 0 && (
+        <Kicker style={{ color: ink(0.5), letterSpacing: 1 }}>{filter === 'All' ? 'Recent' : filter}</Kicker>
+      )}
+
+      {list.length === 0 &&
+        (receipts.length === 0 ? (
+          <Card style={{ alignItems: 'center', gap: 10, paddingVertical: 30, marginTop: 8 }}>
+            <View
+              style={{
+                width: 56, height: 56, borderRadius: 999,
+                alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentRamp[100],
+              }}
+            >
+              <Icon name="vault" size={26} color={colors.accent} />
+            </View>
+            <Heading style={{ fontSize: 18, marginTop: 2 }}>Your vault is empty</Heading>
+            <Body style={{ fontSize: 12.5, color: ink(0.55), textAlign: 'center', paddingHorizontal: 24 }}>
+              Snap a receipt and we'll read the merchant, total, and dates — then track every return &
+              warranty for you.
+            </Body>
+            <Button title="Add your first receipt" variant="primary" style={{ marginTop: 6 }} onPress={() => router.push('/capture')} />
+          </Card>
+        ) : (
+          <Card style={{ alignItems: 'center', gap: 8, paddingVertical: 26, marginTop: 8 }}>
+            <Heading style={{ fontSize: 16 }}>No matches</Heading>
+            <Body style={{ fontSize: 12.5, color: ink(0.55), textAlign: 'center', paddingHorizontal: 24 }}>
+              {query.trim()
+                ? `Nothing here matches “${query.trim()}”.`
+                : `No receipts in “${filter}” right now.`}
+            </Body>
+            {(query.trim() || filter !== 'All') && (
+              <Button
+                title="Clear filters"
+                variant="secondary"
+                style={{ marginTop: 4 }}
+                onPress={() => {
+                  setQuery('');
+                  setFilter('All');
+                }}
+              />
+            )}
+          </Card>
+        ))}
 
       <View style={{ gap: 10 }}>
         {list.map((r) => {

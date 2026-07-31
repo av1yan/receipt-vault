@@ -1,9 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Image, Pressable, ScrollView, Share, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Image, PanResponder, Pressable, ScrollView, Share, View } from 'react-native';
 import { Body, Button, Heading, Icon, Kicker, Tag } from '../../components/ui';
 import { derive, fmtD, fmtDY, money } from '../../lib/data';
 import { useVault } from '../../lib/store';
 import { colors, fonts, ink, radius, shadow, scrim } from '../../lib/theme';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export default function ReceiptDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -12,6 +15,29 @@ export default function ReceiptDetail() {
   const receipt = receipts.find((r) => String(r.id) === String(id));
 
   const close = () => router.back();
+
+  // Slide-up entrance + drag-to-dismiss (handle only, so the ScrollView still scrolls).
+  const translateY = useRef(new Animated.Value(60)).current;
+  useEffect(() => {
+    Animated.spring(translateY, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 170, mass: 0.7 }).start();
+  }, [translateY]);
+
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+      onPanResponderMove: (_, g) => {
+        if (g.dy > 0) translateY.setValue(g.dy);
+      },
+      onPanResponderRelease: (_, g) => {
+        if (g.dy > 120 || g.vy > 0.6) {
+          Animated.timing(translateY, { toValue: 800, duration: 200, useNativeDriver: true }).start(() => router.back());
+        } else {
+          Animated.spring(translateY, { toValue: 0, useNativeDriver: true, damping: 20, stiffness: 200 }).start();
+        }
+      },
+    }),
+  ).current;
+
   if (!receipt) {
     close();
     return null;
@@ -35,7 +61,7 @@ export default function ReceiptDetail() {
       onPress={close}
       style={{ flex: 1, backgroundColor: scrim(0.45), justifyContent: 'flex-end' }}
     >
-      <Pressable
+      <AnimatedPressable
         onPress={() => {}}
         style={{
           maxHeight: '90%',
@@ -45,15 +71,13 @@ export default function ReceiptDetail() {
           paddingHorizontal: 20,
           paddingTop: 12,
           paddingBottom: 30,
+          transform: [{ translateY }],
         }}
       >
-        {/* grabber */}
-        <View
-          style={{
-            width: 44, height: 5, borderRadius: 999, alignSelf: 'center',
-            backgroundColor: ink(0.16), marginBottom: 16,
-          }}
-        />
+        {/* grabber (drag to dismiss) — generous touch zone */}
+        <View {...pan.panHandlers} style={{ paddingTop: 6, paddingBottom: 18, marginTop: -6, alignItems: 'center' }}>
+          <View style={{ width: 44, height: 5, borderRadius: 999, backgroundColor: ink(0.16) }} />
+        </View>
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* ── Header: photo + merchant ─────────────────────────────── */}
           <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
@@ -198,7 +222,7 @@ export default function ReceiptDetail() {
             <Button title="Close" variant="secondary" style={{ flex: 1 }} onPress={close} />
           </View>
         </ScrollView>
-      </Pressable>
+      </AnimatedPressable>
     </Pressable>
   );
 }

@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Chip, Field, Heading, Input, Kicker, Tag } from '../components/ui';
 import { addDays, addMonths, fmtD, fmtDY, TODAY } from '../lib/data';
 import { extractReceipt, type ExtractedItem } from '../lib/extraction';
+import { haptics } from '../lib/haptics';
 import { persistImage } from '../lib/images';
 import { useVault } from '../lib/store';
 import { colors, fonts, ink, radius } from '../lib/theme';
@@ -116,6 +117,7 @@ export default function Capture() {
       total, pay: 'Visa ·4417', ret: f.ret, war: f.war, imageUri: f.photo ?? null,
       items,
     });
+    haptics.success();
     flash('Saved · ' + (f.ret ? 'return reminder set for ' + fmtD(addDays(f.dateValue, f.ret)) : 'filed to vault'));
     router.dismissTo('/');
   };
@@ -238,6 +240,7 @@ function ShootScreen({
 
   const takePhoto = async () => {
     if (busy) return;
+    haptics.tap();
     setBusy(true);
     try {
       const pic = await cameraRef.current?.takePictureAsync({ quality: 0.6 });

@@ -3,6 +3,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Card, Heading, Icon, ProgressBar, Tag } from '../../components/ui';
 import { derive, fmtDY } from '../../lib/data';
+import { haptics } from '../../lib/haptics';
 import { ensurePermission, hasPermission, rescheduleAll, scheduledCount } from '../../lib/notifications';
 import { useVault } from '../../lib/store';
 import { colors, fonts, ink, radius } from '../../lib/theme';
@@ -29,6 +30,7 @@ export default function DeadlinesScreen() {
   const [remindersOn, setRemindersOn] = useState(false);
   const [count, setCount] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [denied, setDenied] = useState(false);
 
   // Reflect current permission + scheduled count (refreshes as receipts change).
   useEffect(() => {
@@ -53,7 +55,11 @@ export default function DeadlinesScreen() {
       if (await ensurePermission()) {
         const n = await rescheduleAll(receipts);
         setRemindersOn(true);
+        setDenied(false);
         setCount(n);
+        haptics.success();
+      } else {
+        setDenied(true);
       }
     } finally {
       setBusy(false);
@@ -136,6 +142,23 @@ export default function DeadlinesScreen() {
           </Pressable>
         )}
       </Card>
+
+      {denied && (
+        <View
+          style={{
+            flexDirection: 'row', gap: 9, alignItems: 'flex-start',
+            backgroundColor: colors.accentRamp[100], borderRadius: radius.md,
+            padding: 12, marginTop: -6,
+          }}
+        >
+          <Body style={{ fontSize: 14 }}>⚠️</Body>
+          <Body style={{ flex: 1, fontSize: 12.5, color: colors.accentRamp[800] }}>
+            Notifications are turned off for Receipt Vault. Enable them in{' '}
+            <Body style={{ fontFamily: fonts.bodySemi, color: colors.accentRamp[800] }}>Settings › Notifications</Body>{' '}
+            to get deadline reminders — your countdowns still work here either way.
+          </Body>
+        </View>
+      )}
 
       {rows.length > 0 ? (
         <View style={{ gap: 10, marginTop: 4 }}>
