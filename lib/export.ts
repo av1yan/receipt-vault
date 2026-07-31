@@ -39,10 +39,10 @@ export function receiptsToCsv(receipts: Receipt[]): string {
 export type ExportResult = 'shared' | 'unavailable' | 'empty' | 'error';
 
 /** Write the CSV to a temp file and open the share sheet. */
-export async function exportReceiptsCsv(receipts: Receipt[]): Promise<ExportResult> {
+export async function exportReceiptsCsv(receipts: Receipt[], fileBase = 'receipt-vault'): Promise<ExportResult> {
   if (receipts.length === 0) return 'empty';
   try {
-    const uri = FileSystem.cacheDirectory + 'receipt-vault.csv';
+    const uri = FileSystem.cacheDirectory + `${fileBase}.csv`;
     await FileSystem.writeAsStringAsync(uri, receiptsToCsv(receipts));
     if (!(await Sharing.isAvailableAsync())) return 'unavailable';
     await Sharing.shareAsync(uri, {

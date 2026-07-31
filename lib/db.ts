@@ -36,7 +36,8 @@ export async function initDb(): Promise<void> {
       image_uri  TEXT,
       status     TEXT,
       status_kind TEXT,
-      status_at  INTEGER
+      status_at  INTEGER,
+      reimbursable INTEGER
     );
     CREATE TABLE IF NOT EXISTS line_items (
       id         INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -59,6 +60,10 @@ export async function initDb(): Promise<void> {
     await db.execAsync('ALTER TABLE receipts ADD COLUMN status_kind TEXT');
     await db.execAsync('ALTER TABLE receipts ADD COLUMN status_at INTEGER');
   }
+  // Migration: add reimbursable flag.
+  if (!cols.some((c) => c.name === 'reimbursable')) {
+    await db.execAsync('ALTER TABLE receipts ADD COLUMN reimbursable INTEGER');
+  }
 
   const row = await db.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM receipts');
   if ((row?.n ?? 0) === 0) {
@@ -79,6 +84,7 @@ type ReceiptRow = {
   status: string | null;
   status_kind: string | null;
   status_at: number | null;
+  reimbursable: number | null;
 };
 type ItemRow = { receipt_id: number; name: string; price: number };
 
@@ -86,7 +92,7 @@ type ItemRow = { receipt_id: number; name: string; price: number };
 export async function loadReceipts(): Promise<Receipt[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<ReceiptRow>(
-    'SELECT id, merchant, cat, date, total, pay, ret, war, image_uri, status, status_kind, status_at FROM receipts ORDER BY date DESC, id DESC',
+    'SELECT id, merchant, cat, date, total, pay, ret, war, image_uri, status, status_kind, status_at, reimbursable FROM receipts ORDER BY date DESC, id DESC',
   );
   const items = await db.getAllAsync<ItemRow>(
     'SELECT receipt_id, name, price FROM line_items ORDER BY receipt_id, position ASC',
@@ -112,6 +118,7 @@ export async function loadReceipts(): Promise<Receipt[]> {
     status: (r.status as Receipt['status']) ?? 'open',
     statusKind: (r.status_kind as Receipt['statusKind']) ?? null,
     statusAt: r.status_at != null ? new Date(r.status_at) : null,
+    reimbursable: !!r.reimbursable,
     items: byReceipt.get(r.id) ?? [],
   }));
 }
@@ -121,11 +128,11 @@ export async function insertReceipt(r: Receipt): Promise<void> {
   const db = await getDb();
   await db.withTransactionAsync(async () => {
     await db.runAsync(
-      'INSERT OR REPLACE INTO receipts (id, merchant, cat, date, total, pay, ret, war, created_at, image_uri, status, status_kind, status_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT OR REPLACE INTO receipts (id, merchant, cat, date, total, pay, ret, war, created_at, image_uri, status, status_kind, status_at, reimbursable) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         r.id, r.merchant, r.cat, r.date.getTime(), r.total, r.pay, r.ret, r.war, Date.now(),
         r.imageUri ?? null, r.status ?? 'open', r.statusKind ?? null,
-        r.statusAt ? r.statusAt.getTime() : null,
+        r.statusAt ? r.statusAt.getTime() : null, r.reimbursable ? 1 : 0,
       ],
     );
     await db.runAsync('DELETE FROM line_items WHERE receipt_id = ?', [r.id]);

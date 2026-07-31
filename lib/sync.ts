@@ -35,6 +35,7 @@ type CloudReceipt = {
   status?: string;
   statusKind?: string | null;
   statusAt?: number | null;
+  reimbursable?: boolean;
 };
 
 export async function getVaultKey(): Promise<string | null> {
@@ -162,6 +163,7 @@ function toCloud(r: Receipt, hasImage: boolean) {
     status: r.status ?? 'open',
     statusKind: r.statusKind ?? null,
     statusAt: r.statusAt ? r.statusAt.getTime() : null,
+    reimbursable: !!r.reimbursable,
   };
 }
 
@@ -180,5 +182,6 @@ function fromCloud(c: CloudReceipt, imageUri: string | null): Receipt {
     status: (c.status as ReceiptStatus) ?? 'open',
     statusKind: (c.statusKind as StatusKind) ?? null,
     statusAt: c.statusAt != null ? new Date(c.statusAt) : null,
+    reimbursable: !!c.reimbursable,
   };
 }

@@ -12,7 +12,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export default function ReceiptDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { receipts, setStatus, flash } = useVault();
+  const { receipts, setStatus, setReimbursable, flash } = useVault();
   const receipt = receipts.find((r) => String(r.id) === String(id));
 
   const close = () => dismiss(router);
@@ -46,6 +46,7 @@ export default function ReceiptDetail() {
   const v = derive(receipt);
   const itemsSum = receipt.items.reduce((a, li) => a + li.price, 0);
   const st = statusOf(receipt);
+  const reimb = !!receipt.reimbursable;
   const kindLabel = receipt.statusKind === 'warranty' ? 'Warranty claim' : 'Return';
   const whenLabel = receipt.statusAt ? ` · ${fmtD(receipt.statusAt)}` : '';
 
@@ -149,6 +150,32 @@ export default function ReceiptDetail() {
               }
             />
           </View>
+
+          {/* ── Reimbursable toggle ──────────────────────────────────── */}
+          <Pressable
+            onPress={() => setReimbursable(receipt.id, !reimb)}
+            style={({ pressed }) => ({
+              marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 11,
+              backgroundColor: reimb ? colors.accent2Ramp[100] : colors.surface,
+              borderRadius: radius.md, paddingVertical: 12, paddingHorizontal: 14,
+              opacity: pressed ? 0.9 : 1,
+            })}
+          >
+            <View
+              style={{
+                width: 22, height: 22, borderRadius: 7,
+                borderWidth: 2, borderColor: reimb ? colors.accent2Ramp[600] : ink(0.25),
+                backgroundColor: reimb ? colors.accent2Ramp[500] : 'transparent',
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              {reimb && <Body style={{ color: '#fff', fontSize: 13, fontFamily: fonts.heading }}>✓</Body>}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Heading style={{ fontSize: 14 }}>Reimbursable</Heading>
+              <Body style={{ fontSize: 11.5, color: ink(0.55) }}>Flag as a business expense to track & export.</Body>
+            </View>
+          </Pressable>
 
           {/* ── Line items (receipt block) ───────────────────────────── */}
           {receipt.items.length > 0 && (

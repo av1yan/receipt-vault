@@ -5,6 +5,8 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Heading, Kicker, ProgressBar, Tag } from '../components/ui';
 import { money } from '../lib/data';
+import { exportReceiptsCsv } from '../lib/export';
+import { haptics } from '../lib/haptics';
 import { monthlyTotals, recurringMerchants, topMerchants } from '../lib/insights';
 import { dismiss } from '../lib/nav';
 import { useVault } from '../lib/store';
@@ -13,11 +15,26 @@ import { colors, fonts, ink } from '../lib/theme';
 export default function InsightsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { receipts } = useVault();
+  const { receipts, flash } = useVault();
 
   const months = useMemo(() => monthlyTotals(receipts, 6), [receipts]);
   const merchants = useMemo(() => topMerchants(receipts, 5), [receipts]);
   const recurring = useMemo(() => recurringMerchants(receipts), [receipts]);
+
+  const reimb = useMemo(() => receipts.filter((r) => r.reimbursable), [receipts]);
+  const reimbTotal = reimb.reduce((a, r) => a + r.total, 0);
+
+  const exportReimb = async () => {
+    const res = await exportReceiptsCsv(reimb, 'receipt-vault-reimbursable');
+    if (res === 'shared') {
+      haptics.success();
+      flash(`Exported ${reimb.length} reimbursable receipts`);
+    } else if (res === 'unavailable') {
+      flash('Sharing isn’t available on this device');
+    } else if (res !== 'empty') {
+      flash('Export failed — please try again');
+    }
+  };
 
   const maxMonth = Math.max(1, ...months.map((m) => m.total));
   const maxMerchant = Math.max(1, ...merchants.map((m) => m.total));
@@ -37,6 +54,23 @@ export default function InsightsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 28, gap: 16 }} showsVerticalScrollIndicator={false}>
+        {/* ── Reimbursable ──────────────────────────────────────────── */}
+        <Card elevation="md" style={{ padding: 18, gap: 12, backgroundColor: colors.accent2Ramp[800], overflow: 'hidden' }}>
+          <View style={{ position: 'absolute', right: -30, top: -30, width: 120, height: 120, borderRadius: 999, backgroundColor: colors.accent2Ramp[700] }} />
+          <View>
+            <Kicker style={{ color: colors.accent2Ramp[100], opacity: 0.8, letterSpacing: 1 }}>Reimbursable</Kicker>
+            <Heading style={{ fontSize: 34, letterSpacing: -0.6, color: colors.accent2Ramp[100] }}>{money(reimbTotal)}</Heading>
+            <Body style={{ fontSize: 12.5, color: colors.accent2Ramp[100], opacity: 0.85 }}>
+              {reimb.length > 0
+                ? `${reimb.length} receipt${reimb.length === 1 ? '' : 's'} flagged · owed back to you`
+                : 'Flag receipts as reimbursable on their detail screen.'}
+            </Body>
+          </View>
+          {reimb.length > 0 && (
+            <Button title="Export report (CSV)" variant="primary" block onPress={exportReimb} />
+          )}
+        </Card>
+
         {/* ── Monthly trend ─────────────────────────────────────────── */}
         <Card style={{ padding: 16, gap: 12 }}>
           <Kicker style={{ color: ink(0.45), letterSpacing: 1 }}>Monthly spend</Kicker>

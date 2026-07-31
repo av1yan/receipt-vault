@@ -8,7 +8,7 @@ import { derive, fmtD, isActive, money, statusOf } from '../../lib/data';
 import { useVault } from '../../lib/store';
 import { colors, fonts, ink, radius, shadow } from '../../lib/theme';
 
-const FILTERS = ['All', 'Returns open', 'Under warranty', 'This month'];
+const FILTERS = ['All', 'Returns open', 'Under warranty', 'Reimbursable', 'This month'];
 
 export default function VaultScreen() {
   const insets = useSafeAreaInsets();
@@ -25,6 +25,7 @@ export default function VaultScreen() {
       const v = derive(r);
       if (filter === 'Returns open' && (!isActive(r) || v.retLeft < 0)) return false;
       if (filter === 'Under warranty' && v.warLeft < 0) return false;
+      if (filter === 'Reimbursable' && !r.reimbursable) return false;
       if (filter === 'This month' && r.date.getMonth() !== 6) return false;
       if (q) {
         const hay = `${r.merchant} ${r.cat} ${r.total}`.toLowerCase();

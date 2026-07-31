@@ -13,6 +13,7 @@ type VaultCtx = {
   addReceipt: (r: NewReceipt) => void;
   mergeReceipts: (remote: Receipt[]) => void;
   setStatus: (id: number, status: ReceiptStatus, kind?: StatusKind | null) => void;
+  setReimbursable: (id: number, value: boolean) => void;
   budgets: Budgets;
   setBudget: (cat: string, amount: number) => void;
   toast: string;
@@ -58,6 +59,17 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     return () => {
       alive = false;
     };
+  }, []);
+
+  const setReimbursable = useCallback((id: number, value: boolean) => {
+    setReceipts((prev) => {
+      const next = prev.map((r) => (r.id === id ? { ...r, reimbursable: value } : r));
+      const updated = next.find((r) => r.id === id);
+      if (updated && persist.current) {
+        insertReceipt(updated).catch((e) => console.warn('[receipt-vault] reimbursable persist failed', e));
+      }
+      return next;
+    });
   }, []);
 
   // Category budgets live in a small on-disk JSON file.
@@ -130,8 +142,8 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ receipts, addReceipt, mergeReceipts, setStatus, budgets, setBudget, toast, flash }),
-    [receipts, addReceipt, mergeReceipts, setStatus, budgets, setBudget, toast, flash],
+    () => ({ receipts, addReceipt, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash }),
+    [receipts, addReceipt, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash],
   );
 
   // Hold the UI on a plain background until the first load settles, so the
