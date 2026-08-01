@@ -9,13 +9,14 @@
 
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
+import { errMsg, toSession, type Session } from './authParse';
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from './config';
 import { getVaultKey, setVaultKey } from './sync';
 
 const SESSION = 'rv-session';
 const DEVICE_KEY_BACKUP = 'rv-device-vault-key';
 
-export type Session = { accessToken: string; refreshToken: string; email: string; userId: string };
+export type { Session } from './authParse';
 export type AuthResult = { ok: boolean; needsConfirm?: boolean; error?: string };
 
 const baseHeaders = { apikey: SUPABASE_ANON_KEY, 'content-type': 'application/json' };
@@ -27,20 +28,6 @@ export async function getSession(): Promise<Session | null> {
   } catch {
     return null;
   }
-}
-
-function toSession(data: any): Session | null {
-  if (!data?.access_token || !data?.user?.id) return null;
-  return {
-    accessToken: data.access_token,
-    refreshToken: data.refresh_token ?? '',
-    email: data.user.email ?? '',
-    userId: data.user.id,
-  };
-}
-
-function errMsg(data: any, fallback: string): string {
-  return data?.error_description || data?.msg || data?.message || data?.error || fallback;
 }
 
 export async function signIn(email: string, password: string): Promise<AuthResult> {
