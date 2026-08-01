@@ -10,7 +10,7 @@ import { haptics } from '../lib/haptics';
 import { monthlyTotals, recurringMerchants, topMerchants } from '../lib/insights';
 import { dismiss } from '../lib/nav';
 import { useVault } from '../lib/store';
-import { colors, fonts, ink, radius, shadow } from '../lib/theme';
+import { colors, fonts, ink, radius, shadow, statusBarStyle } from '../lib/theme';
 
 const MONTHS_FULL = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -63,7 +63,7 @@ export default function InsightsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
       <View
         style={{
           paddingTop: insets.top + 8, paddingHorizontal: 20, paddingBottom: 10,

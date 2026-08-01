@@ -8,7 +8,7 @@ import { Body, Button, Card, Heading, Kicker, Tag } from '../../components/ui';
 import { generateClaim, type Claim, type ClaimKind } from '../../lib/claim';
 import { dismiss } from '../../lib/nav';
 import { useVault } from '../../lib/store';
-import { colors, fonts, ink } from '../../lib/theme';
+import { colors, fonts, ink, statusBarStyle } from '../../lib/theme';
 
 export default function ClaimScreen() {
   const { id, kind: kindParam } = useLocalSearchParams<{ id: string; kind?: string }>();
@@ -49,7 +49,7 @@ export default function ClaimScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
       <View
         style={{
           paddingTop: insets.top + 8, paddingHorizontal: 20, paddingBottom: 10,

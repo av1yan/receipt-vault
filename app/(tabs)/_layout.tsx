@@ -4,7 +4,7 @@ import { Animated, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, IconName, Toast } from '../../components/ui';
 import { useVault } from '../../lib/store';
-import { colors, fonts, ink, radius, shadow } from '../../lib/theme';
+import { colors, fonts, ink, isDark, radius, shadow } from '../../lib/theme';
 
 const TABS: { name: string; label: string; icon: IconName }[] = [
   { name: 'index', label: 'Vault', icon: 'vault' },
@@ -12,12 +12,6 @@ const TABS: { name: string; label: string; icon: IconName }[] = [
   { name: 'spending', label: 'Spending', icon: 'bars' },
   { name: 'budgets', label: 'Budgets', icon: 'wallet' },
 ];
-
-// Colors as rgba so Animated can interpolate cleanly between them.
-const PILL_ON = 'rgba(255,242,235,1)'; // accentRamp[100]
-const PILL_OFF = 'rgba(255,242,235,0)';
-const LABEL_ON = 'rgba(198,113,57,1)'; // accent
-const LABEL_OFF = 'rgba(32,30,29,0.45)'; // ink(0.45)
 
 function TabButton({ t, focused, onPress }: { t: (typeof TABS)[number]; focused: boolean; onPress: () => void }) {
   const v = useRef(new Animated.Value(focused ? 1 : 0)).current;
@@ -30,10 +24,17 @@ function TabButton({ t, focused, onPress }: { t: (typeof TABS)[number]; focused:
     }).start();
   }, [focused, v]);
 
+  // Theme-aware endpoints (rgba so Animated interpolates cleanly). Active pill is
+  // a light peach in light mode, a soft terracotta wash on the dark surface.
+  const pillOn = isDark() ? 'rgba(198,113,57,0.22)' : 'rgba(255,242,235,1)';
+  const pillOff = isDark() ? 'rgba(198,113,57,0)' : 'rgba(255,242,235,0)';
+  const labelOn = 'rgba(198,113,57,1)'; // accent
+  const labelOff = ink(0.45);
+
   // Clamp color/background so the spring's overshoot doesn't over-saturate them;
   // let the scale ride the overshoot for the bounce.
-  const bg = v.interpolate({ inputRange: [0, 1], outputRange: [PILL_OFF, PILL_ON], extrapolate: 'clamp' });
-  const label = v.interpolate({ inputRange: [0, 1], outputRange: [LABEL_OFF, LABEL_ON], extrapolate: 'clamp' });
+  const bg = v.interpolate({ inputRange: [0, 1], outputRange: [pillOff, pillOn], extrapolate: 'clamp' });
+  const label = v.interpolate({ inputRange: [0, 1], outputRange: [labelOff, labelOn], extrapolate: 'clamp' });
   const scale = v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.09] });
   const offOpacity = v.interpolate({ inputRange: [0, 1], outputRange: [1, 0], extrapolate: 'clamp' });
 

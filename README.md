@@ -93,7 +93,7 @@ Built with **Expo / React Native** (SDK 57) and a **Supabase** backend.
 - **Anthropic Claude** (`claude-opus-5`) for receipt extraction & claim drafting
 - **jest + ts-jest** for unit tests
 
-Design: the warm "Organic" system (cream `#f5ead8`, terracotta `#c67139`, sage `#7a8a5e`) with Caprasimo + Figtree fonts.
+Design: the warm "Organic" system (cream `#f5ead8`, terracotta `#c67139`, sage `#7a8a5e`) with Caprasimo + Figtree fonts — with a matching **dark mode** (Light / Dark / System, in Settings).
 
 ---
 
@@ -195,7 +195,7 @@ More docs: [`FEATURES.md`](FEATURES.md) (data model & contracts), [`EMAIL_IMPORT
 - 🏠 **Home‑screen widget** — surface the next deadline at a glance (native scaffold in `targets/`, needs an EAS build)
 - 🔎 **Full‑text search** across merchants and line items
 - 🧠 **Smarter category suggestions** from merchant history
-- 🌙 **Dark mode** for the Organic palette
+- 🔒 **App Lock** — Face ID / passcode to open the vault
 - 🤝 **Shared vaults** — invite a partner to a vault beyond the current same‑sync‑code sharing
 - 🧾 **Warranty document attachments** — store manuals / proof‑of‑purchase PDFs alongside the photo
 

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Chip, Heading, Icon, IconName, Kicker } from '../components/ui';
+import { useAppearance } from '../lib/appearance';
 import { exportReceiptsCsv } from '../lib/export';
 import { dismiss } from '../lib/nav';
 import {
@@ -15,14 +16,17 @@ import {
   sendTestReminder,
   setReminderLeadDays,
 } from '../lib/notifications';
-import { LEAD_PRESETS, loadSettings, saveSettings } from '../lib/settings';
+import { LEAD_PRESETS, loadSettings, THEME_OPTIONS, ThemePref, updateSettings } from '../lib/settings';
 import { useVault } from '../lib/store';
-import { colors, fonts, ink, radius, shadow } from '../lib/theme';
+import { colors, fonts, ink, radius, shadow, statusBarStyle } from '../lib/theme';
+
+const THEME_LABEL: Record<ThemePref, string> = { system: 'System', light: 'Light', dark: 'Dark' };
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { receipts, clearAll, flash } = useVault();
+  const { pref, setPref } = useAppearance();
 
   const [remindersOn, setRemindersOn] = useState(false);
   const [count, setCount] = useState(0);
@@ -67,7 +71,7 @@ export default function SettingsScreen() {
   const changeLead = async (days: number) => {
     setLead(days);
     setReminderLeadDays(days);
-    await saveSettings({ reminderLeadDays: days });
+    await updateSettings({ reminderLeadDays: days });
     if (remindersOn) setCount(await rescheduleAll(receipts));
     flash(`Reminding ${days} day${days > 1 ? 's' : ''} ahead`);
   };
@@ -115,7 +119,7 @@ export default function SettingsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
       <View
         style={{
           paddingTop: insets.top + 8, paddingHorizontal: 20, paddingBottom: 10,
@@ -136,6 +140,24 @@ export default function SettingsScreen() {
             subtitle="Sync, sync code & email import"
             onPress={() => router.push('/sync')}
           />
+        </View>
+
+        <View style={{ gap: 10 }}>
+          <Kicker style={{ color: ink(0.5), letterSpacing: 1 }}>Appearance</Kicker>
+          <Card style={{ padding: 14, gap: 10 }}>
+            <Body style={{ fontSize: 12.5, color: ink(0.7) }}>Theme</Body>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {THEME_OPTIONS.map((opt) => (
+                <Chip
+                  key={opt}
+                  label={THEME_LABEL[opt]}
+                  active={pref === opt}
+                  onPress={() => setPref(opt)}
+                  style={{ flex: 1, alignItems: 'center' }}
+                />
+              ))}
+            </View>
+          </Card>
         </View>
 
         <View style={{ gap: 10 }}>

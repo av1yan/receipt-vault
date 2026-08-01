@@ -1,6 +1,6 @@
 // Unit tests for the settings persistence layer. The real module talks to
 // expo-file-system; here we swap that for a tiny in-memory filesystem so the
-// load/save + validation logic can be tested without native deps.
+// load/save/merge + validation logic can be tested without native deps.
 
 const mockFiles: Record<string, string> = {};
 
@@ -22,7 +22,14 @@ jest.mock(
   { virtual: true },
 );
 
-import { DEFAULT_SETTINGS, LEAD_PRESETS, loadSettings, saveSettings } from '../lib/settings';
+import {
+  DEFAULT_SETTINGS,
+  LEAD_PRESETS,
+  THEME_OPTIONS,
+  loadSettings,
+  saveSettings,
+  updateSettings,
+} from '../lib/settings';
 
 const FILE = 'doc://settings.json';
 
@@ -36,29 +43,36 @@ describe('loadSettings', () => {
   });
 
   it('returns a fresh object (not the DEFAULT_SETTINGS reference)', async () => {
-    const s = await loadSettings();
-    expect(s).not.toBe(DEFAULT_SETTINGS);
+    expect(await loadSettings()).not.toBe(DEFAULT_SETTINGS);
   });
 
-  it('reads a valid stored lead time', async () => {
-    mockFiles[FILE] = JSON.stringify({ reminderLeadDays: 7 });
-    expect((await loadSettings()).reminderLeadDays).toBe(7);
+  it('reads a valid stored lead time and theme', async () => {
+    mockFiles[FILE] = JSON.stringify({ reminderLeadDays: 7, themePref: 'dark' });
+    expect(await loadSettings()).toEqual({ reminderLeadDays: 7, themePref: 'dark' });
   });
 
   it.each([0, -3, NaN, 'abc', null, undefined])(
-    'falls back to default for invalid lead value %p',
+    'falls back to default lead for invalid value %p',
     async (bad) => {
       mockFiles[FILE] = JSON.stringify({ reminderLeadDays: bad });
       expect((await loadSettings()).reminderLeadDays).toBe(DEFAULT_SETTINGS.reminderLeadDays);
     },
   );
 
-  it('falls back to default when the field is missing', async () => {
+  it.each(['blue', '', 'System', 42, null])(
+    'falls back to default theme for invalid value %p',
+    async (bad) => {
+      mockFiles[FILE] = JSON.stringify({ themePref: bad });
+      expect((await loadSettings()).themePref).toBe(DEFAULT_SETTINGS.themePref);
+    },
+  );
+
+  it('falls back to defaults when fields are missing', async () => {
     mockFiles[FILE] = JSON.stringify({ somethingElse: true });
-    expect((await loadSettings()).reminderLeadDays).toBe(DEFAULT_SETTINGS.reminderLeadDays);
+    expect(await loadSettings()).toEqual(DEFAULT_SETTINGS);
   });
 
-  it('falls back to default on malformed JSON', async () => {
+  it('falls back to defaults on malformed JSON', async () => {
     mockFiles[FILE] = 'not-json{';
     expect(await loadSettings()).toEqual(DEFAULT_SETTINGS);
   });
@@ -66,15 +80,35 @@ describe('loadSettings', () => {
 
 describe('saveSettings', () => {
   it('persists a value that loadSettings reads back (round-trip)', async () => {
-    await saveSettings({ reminderLeadDays: 1 });
-    expect(mockFiles[FILE]).toBe(JSON.stringify({ reminderLeadDays: 1 }));
-    expect((await loadSettings()).reminderLeadDays).toBe(1);
+    const s = { reminderLeadDays: 1, themePref: 'light' as const };
+    await saveSettings(s);
+    expect(mockFiles[FILE]).toBe(JSON.stringify(s));
+    expect(await loadSettings()).toEqual(s);
   });
 
-  it('round-trips every allowed preset', async () => {
+  it('round-trips every lead preset and theme option', async () => {
     for (const d of LEAD_PRESETS) {
-      await saveSettings({ reminderLeadDays: d });
-      expect((await loadSettings()).reminderLeadDays).toBe(d);
+      for (const t of THEME_OPTIONS) {
+        await saveSettings({ reminderLeadDays: d, themePref: t });
+        expect(await loadSettings()).toEqual({ reminderLeadDays: d, themePref: t });
+      }
     }
+  });
+});
+
+describe('updateSettings', () => {
+  it('merges a partial change without clobbering the other field', async () => {
+    await saveSettings({ reminderLeadDays: 7, themePref: 'light' });
+
+    await updateSettings({ themePref: 'dark' });
+    expect(await loadSettings()).toEqual({ reminderLeadDays: 7, themePref: 'dark' });
+
+    await updateSettings({ reminderLeadDays: 1 });
+    expect(await loadSettings()).toEqual({ reminderLeadDays: 1, themePref: 'dark' });
+  });
+
+  it('starts from defaults when nothing is stored yet', async () => {
+    const next = await updateSettings({ themePref: 'dark' });
+    expect(next).toEqual({ reminderLeadDays: DEFAULT_SETTINGS.reminderLeadDays, themePref: 'dark' });
   });
 });

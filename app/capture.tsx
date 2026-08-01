@@ -12,7 +12,7 @@ import { haptics } from '../lib/haptics';
 import { persistImage } from '../lib/images';
 import { dismiss } from '../lib/nav';
 import { useVault } from '../lib/store';
-import { colors, fonts, ink, radius } from '../lib/theme';
+import { colors, fonts, ink, radius, statusBarStyle } from '../lib/theme';
 
 const SHOW_CONFIDENCE = true;
 const DEFAULT_RETURN_DAYS = 30;
@@ -136,7 +136,7 @@ export default function Capture() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
       <View
         style={{
           paddingTop: insets.top + 8, paddingHorizontal: 20, paddingBottom: 10,

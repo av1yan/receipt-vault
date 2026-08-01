@@ -6,10 +6,10 @@ import {
   useFonts,
 } from '@expo-google-fonts/figtree';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AppearanceProvider } from '../lib/appearance';
 import { configureNotifications, initReminderSettings } from '../lib/notifications';
 import { colors } from '../lib/theme';
 import { VaultProvider } from '../lib/store';
@@ -31,8 +31,8 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
+      <AppearanceProvider>
       <VaultProvider>
-        <StatusBar style="dark" />
         {/* Phone-width column: on wide screens (web) the app renders centered at
             phone width so the layout matches the design's device frame. No effect
             on a real phone, where the screen is already narrower than the cap. */}
@@ -56,6 +56,7 @@ export default function RootLayout() {
           </View>
         </View>
       </VaultProvider>
+      </AppearanceProvider>
     </SafeAreaProvider>
   );
 }

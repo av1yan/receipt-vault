@@ -10,7 +10,7 @@ import { haptics } from '../lib/haptics';
 import { dismiss } from '../lib/nav';
 import { useVault } from '../lib/store';
 import { getVaultId, getVaultKey, setVaultKey, syncNow } from '../lib/sync';
-import { colors, fonts, ink, radius } from '../lib/theme';
+import { colors, fonts, ink, radius, statusBarStyle } from '../lib/theme';
 
 export default function SyncScreen() {
   const insets = useSafeAreaInsets();
@@ -95,7 +95,7 @@ export default function SyncScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
       <View
         style={{
           paddingTop: insets.top + 8, paddingHorizontal: 20, paddingBottom: 10,

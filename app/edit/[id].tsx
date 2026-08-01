@@ -7,7 +7,7 @@ import { Body, Button, Chip, Field, Heading, Input } from '../../components/ui';
 import { CATS, fmtDY, type Receipt } from '../../lib/data';
 import { dismiss } from '../../lib/nav';
 import { useVault } from '../../lib/store';
-import { colors, fonts, ink } from '../../lib/theme';
+import { colors, fonts, ink, statusBarStyle } from '../../lib/theme';
 
 const RETURN_OPTS: [string, number][] = [['None', 0], ['14 days', 14], ['30 days', 30], ['60 days', 60], ['90 days', 90]];
 const WARRANTY_OPTS: [string, number][] = [['None', 0], ['1 year', 12], ['2 years', 24], ['3 years', 36]];
@@ -65,7 +65,7 @@ export default function EditReceipt() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <StatusBar style="dark" />
+      <StatusBar style={statusBarStyle()} />
       <View
         style={{
           paddingTop: insets.top + 8, paddingHorizontal: 20, paddingBottom: 10,
