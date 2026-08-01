@@ -43,6 +43,26 @@ export async function markCloudPhoto(id: number) {
   }
 }
 
+/** Delete a receipt's local photo file and drop it from the cloud manifest. */
+export async function deletePhotoFor(receipt: { id: number; imageUri?: string | null }): Promise<void> {
+  if (receipt.imageUri && receipt.imageUri.startsWith('file')) {
+    try {
+      await FileSystem.deleteAsync(receipt.imageUri, { idempotent: true });
+    } catch (e) {
+      console.warn('[receipt-vault] deletePhotoFor failed', e);
+    }
+  }
+  try {
+    const s = await loadCloudPhotoIds();
+    if (s.has(receipt.id)) {
+      s.delete(receipt.id);
+      await saveCloudPhotoIds(s);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 /** True if the given file:// URI still points at a real local file. */
 export async function localPhotoExists(uri?: string | null): Promise<boolean> {
   if (!uri || !uri.startsWith('file')) return false;

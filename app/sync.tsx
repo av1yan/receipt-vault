@@ -44,8 +44,8 @@ export default function SyncScreen() {
   const doSync = async () => {
     setBusy(true);
     try {
-      const remote = await syncNow(receipts);
-      mergeReceipts(remote);
+      const { receipts: remote, removedIds } = await syncNow(receipts);
+      mergeReceipts(remote, removedIds);
       setLastCount(remote.length);
       setKey(await getVaultKey());
       haptics.success();
@@ -68,8 +68,8 @@ export default function SyncScreen() {
     setBusy(true);
     try {
       await setVaultKey(code);
-      const remote = await syncNow(receipts);
-      mergeReceipts(remote);
+      const { receipts: remote, removedIds } = await syncNow(receipts);
+      mergeReceipts(remote, removedIds);
       setLastCount(remote.length);
       setKey(await getVaultKey());
       setCodeInput('');

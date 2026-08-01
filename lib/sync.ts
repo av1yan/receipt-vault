@@ -17,6 +17,7 @@ import {
   markCloudPhoto,
   uploadPhoto,
 } from './photoSync';
+import { loadTombstones, saveTombstones } from './tombstones';
 
 const KEY_STORE = 'receiptVaultSyncKey';
 
@@ -36,6 +37,7 @@ type CloudReceipt = {
   statusKind?: string | null;
   statusAt?: number | null;
   reimbursable?: boolean;
+  deleted?: boolean;
 };
 
 export async function getVaultKey(): Promise<string | null> {
@@ -84,16 +86,18 @@ async function callSync(payload: Record<string, unknown>): Promise<any> {
 }
 
 /**
- * Push local receipts + their photos and pull the merged set back.
- * Returns remote receipts with each `imageUri` resolved for THIS device
- * (kept local when present, downloaded from the cloud otherwise).
+ * Push local receipts + photos + deletions, and pull the merged set back.
+ * Returns the live remote receipts (photos resolved for THIS device) plus the
+ * ids to remove locally (tombstoned here or deleted on another device).
  */
-export async function syncNow(local: Receipt[]): Promise<Receipt[]> {
+export async function syncNow(local: Receipt[]): Promise<{ receipts: Receipt[]; removedIds: number[] }> {
   const vaultKey = await ensureVaultKey();
   const inCloud = await loadCloudPhotoIds();
+  const tombstones = new Set(await loadTombstones());
+  const pushable = local.filter((r) => !tombstones.has(r.id));
 
   // 1. Upload any local photo that isn't in the cloud yet.
-  for (const r of local) {
+  for (const r of pushable) {
     if (inCloud.has(r.id) || !(await localPhotoExists(r.imageUri))) continue;
     try {
       const { signedUrl } = await callSync({ vaultKey, op: 'signUpload', id: r.id });
@@ -106,13 +110,22 @@ export async function syncNow(local: Receipt[]): Promise<Receipt[]> {
     }
   }
 
-  // 2. Push metadata (with per-receipt hasImage) + pull the merged set.
+  // 2. Push metadata + deletions, and pull the merged set.
   const data = await callSync({
     vaultKey,
     op: 'both',
-    receipts: local.map((r) => toCloud(r, inCloud.has(r.id) || !!r.imageUri)),
+    receipts: pushable.map((r) => toCloud(r, inCloud.has(r.id) || !!r.imageUri)),
+    deletedIds: [...tombstones],
   });
-  const remote: CloudReceipt[] = data.receipts ?? [];
+  const remoteAll: CloudReceipt[] = data.receipts ?? [];
+
+  // Fold any remotely-deleted rows into the tombstones; keep the live ones.
+  const remote: CloudReceipt[] = [];
+  for (const c of remoteAll) {
+    if (c.deleted) tombstones.add(c.id);
+    else remote.push(c);
+  }
+  await saveTombstones([...tombstones]);
 
   // 3. Fetch signed download URLs for cloud photos whose file we don't actually
   //    have on disk (a set imageUri isn't proof the file still exists).
@@ -149,7 +162,7 @@ export async function syncNow(local: Receipt[]): Promise<Receipt[]> {
     }
     out.push(fromCloud(c, imageUri));
   }
-  return out;
+  return { receipts: out, removedIds: [...tombstones] };
 }
 
 function toCloud(r: Receipt, hasImage: boolean) {

@@ -2,9 +2,11 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { Platform, View } from 'react-native';
 import { loadBudgets, saveBudgets, type Budgets } from './budgets';
 import { SEED, type Receipt, type ReceiptStatus, type StatusKind } from './data';
-import { initDb, insertReceipt, loadReceipts } from './db';
+import { deleteReceipt as dbDeleteReceipt, initDb, insertReceipt, loadReceipts } from './db';
 import { rescheduleAll, scheduleForReceipt } from './notifications';
+import { deletePhotoFor } from './photoSync';
 import { colors } from './theme';
+import { loadTombstones, saveTombstones } from './tombstones';
 
 type NewReceipt = Omit<Receipt, 'id'>;
 
@@ -12,7 +14,8 @@ type VaultCtx = {
   receipts: Receipt[];
   addReceipt: (r: NewReceipt) => void;
   updateReceipt: (r: Receipt) => void;
-  mergeReceipts: (remote: Receipt[]) => void;
+  deleteReceipt: (id: number) => void;
+  mergeReceipts: (remote: Receipt[], removedIds?: number[]) => void;
   setStatus: (id: number, status: ReceiptStatus, kind?: StatusKind | null) => void;
   setReimbursable: (id: number, value: boolean) => void;
   budgets: Budgets;
@@ -37,6 +40,13 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   receiptsRef.current = receipts;
   // Monotonic id source so two receipts added in the same millisecond can't collide.
   const lastId = useRef(0);
+  // Ids of deleted receipts, so a pull can't re-add them (loaded from disk).
+  const tombstones = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    loadTombstones().then((ids) => {
+      tombstones.current = new Set(ids);
+    });
+  }, []);
 
   // Load from SQLite once; fall back to in-memory seed if unavailable.
   useEffect(() => {
@@ -120,25 +130,51 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     rescheduleAll(next).catch(() => {});
   }, []);
 
-  // Merge receipts pulled from the cloud (remote wins on id conflict).
-  const mergeReceipts = useCallback((remote: Receipt[]) => {
-    if (remote.length === 0) return;
-    setReceipts((prev) => {
-      const byId = new Map(prev.map((r) => [r.id, r]));
-      for (const r of remote) byId.set(r.id, r);
-      return [...byId.values()].sort(
-        (a, b) => b.date.getTime() - a.date.getTime() || b.id - a.id,
-      );
-    });
+  // Permanently remove a receipt: drop it locally, tombstone it (so a pull can't
+  // re-add it and the delete propagates on next sync), delete its photo, reschedule.
+  const deleteReceipt = useCallback((id: number) => {
+    const target = receiptsRef.current.find((r) => r.id === id);
+    const next = receiptsRef.current.filter((r) => r.id !== id);
+    setReceipts(next);
+    tombstones.current.add(id);
+    saveTombstones([...tombstones.current]).catch(() => {});
     if (persist.current) {
-      // Persist sequentially — insertReceipt wraps each write in its own
-      // transaction on the shared connection, so overlapping them can fail.
+      dbDeleteReceipt(id).catch((e) => console.warn('[receipt-vault] delete failed', e));
+    }
+    if (target) deletePhotoFor(target).catch(() => {});
+    rescheduleAll(next).catch(() => {});
+  }, []);
+
+  // Merge receipts pulled from the cloud (remote wins on id conflict), and remove
+  // ids the server reports deleted (or tombstoned locally).
+  const mergeReceipts = useCallback((remote: Receipt[], removedIds: number[] = []) => {
+    for (const id of removedIds) tombstones.current.add(id);
+    if (removedIds.length) saveTombstones([...tombstones.current]).catch(() => {});
+
+    const byId = new Map(receiptsRef.current.map((r) => [r.id, r]));
+    for (const r of remote) if (!tombstones.current.has(r.id)) byId.set(r.id, r);
+    for (const id of tombstones.current) byId.delete(id);
+    const next = [...byId.values()].sort(
+      (a, b) => b.date.getTime() - a.date.getTime() || b.id - a.id,
+    );
+    setReceipts(next);
+
+    if (persist.current) {
+      // Sequential — each insert/delete is its own transaction on one connection.
       (async () => {
         for (const r of remote) {
+          if (tombstones.current.has(r.id)) continue;
           try {
             await insertReceipt(r);
           } catch (e) {
             console.warn('[receipt-vault] merge persist failed', e);
+          }
+        }
+        for (const id of removedIds) {
+          try {
+            await dbDeleteReceipt(id);
+          } catch (e) {
+            console.warn('[receipt-vault] merge delete failed', e);
           }
         }
       })();
@@ -163,8 +199,8 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ receipts, addReceipt, updateReceipt, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash }),
-    [receipts, addReceipt, updateReceipt, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash],
+    () => ({ receipts, addReceipt, updateReceipt, deleteReceipt, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash }),
+    [receipts, addReceipt, updateReceipt, deleteReceipt, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash],
   );
 
   // Hold the UI on a plain background until the first load settles, so the

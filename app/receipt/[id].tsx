@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { Animated, Image, PanResponder, Pressable, ScrollView, Share, View } from 'react-native';
+import { Alert, Animated, Image, PanResponder, Pressable, ScrollView, Share, View } from 'react-native';
 import { Body, Button, Heading, Icon, Kicker, Tag } from '../../components/ui';
 import { derive, fmtD, fmtDY, money, statusOf } from '../../lib/data';
 import { dismiss } from '../../lib/nav';
@@ -12,7 +12,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export default function ReceiptDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { receipts, setStatus, setReimbursable, flash } = useVault();
+  const { receipts, setStatus, setReimbursable, deleteReceipt, flash } = useVault();
   const receipt = receipts.find((r) => String(r.id) === String(id));
 
   const close = () => dismiss(router);
@@ -59,6 +59,26 @@ export default function ReceiptDetail() {
       v.warLeft >= 0 && v.warTo ? `Warranty until ${fmtDY(v.warTo)}` : '',
     ].filter(Boolean);
     Share.share({ message: lines.join('\n') }).catch(() => {});
+  };
+
+  const onDelete = () => {
+    Alert.alert(
+      'Delete receipt?',
+      `${receipt.merchant} · ${money(receipt.total)} will be removed from all your devices.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            // No close() here — removing the receipt makes this sheet's
+            // `!receipt` guard dismiss on the next render (avoids a double back).
+            deleteReceipt(receipt.id);
+            flash('Receipt deleted');
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -313,6 +333,13 @@ export default function ReceiptDetail() {
             <Button title="Share" variant="secondary" style={{ flex: 1 }} onPress={share} />
             <Button title="Close" variant="secondary" style={{ flex: 1 }} onPress={close} />
           </View>
+
+          <Pressable
+            onPress={onDelete}
+            style={({ pressed }) => ({ marginTop: 8, alignItems: 'center', paddingVertical: 8, opacity: pressed ? 0.6 : 1 })}
+          >
+            <Body style={{ fontSize: 13, fontFamily: fonts.body, color: '#b23b3b' }}>Delete receipt</Body>
+          </Pressable>
         </ScrollView>
       </AnimatedPressable>
     </Pressable>
