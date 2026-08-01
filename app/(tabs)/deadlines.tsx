@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Card, Heading, Icon, Kicker, ProgressBar, Tag } from '../../components/ui';
-import { derive, fmtD, fmtDY, isActive, statusOf } from '../../lib/data';
+import { derive, fmtD, fmtDY, isActive, nextDeadline, statusOf } from '../../lib/data';
 import { haptics } from '../../lib/haptics';
 import { ensurePermission, hasPermission, rescheduleAll, scheduledCount } from '../../lib/notifications';
 import { useVault } from '../../lib/store';
@@ -103,6 +103,10 @@ export default function DeadlinesScreen() {
     return out.sort((a, b) => a.left - b.left);
   }, [receipts]);
 
+  const next = useMemo(() => nextDeadline(receipts), [receipts]);
+  const retCount = rows.filter((d) => d.kindShort === 'RET').length;
+  const warCount = rows.filter((d) => d.kindShort === 'WAR').length;
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
@@ -113,6 +117,53 @@ export default function DeadlinesScreen() {
       <Body style={{ fontSize: 13, color: ink(0.6), marginTop: -8 }}>
         Nothing lapses on our watch. Counted down from today.
       </Body>
+
+      {/* ── Hero: soonest deadline (or all clear) ─────────────────────── */}
+      {next ? (
+        (() => {
+          const urgent = next.daysLeft <= 7;
+          const ramp = urgent ? colors.accentRamp : colors.accent2Ramp;
+          return (
+            <Pressable
+              onPress={() => router.push(`/receipt/${next.receiptId}`)}
+              style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
+            >
+              <View style={{ backgroundColor: ramp[800], borderRadius: radius.lg * 1.15, padding: 18, overflow: 'hidden' }}>
+                <View style={{ position: 'absolute', right: -34, top: -34, width: 140, height: 140, borderRadius: 999, backgroundColor: ramp[700] }} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Kicker style={{ color: ramp[100], opacity: 0.85, letterSpacing: 1 }}>
+                      {urgent ? 'Closing soon' : 'Next deadline'}
+                    </Kicker>
+                    <Heading style={{ fontSize: 22, color: ramp[100], marginTop: 2 }}>{next.merchant}</Heading>
+                    <Body style={{ fontSize: 12.5, color: ramp[100], opacity: 0.85, marginTop: 2 }}>
+                      {next.kind === 'return' ? 'Return window' : 'Warranty'} · by {fmtDY(next.date)}
+                    </Body>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Heading style={{ fontSize: 40, letterSpacing: -1, color: ramp[100] }}>{next.daysLeft}</Heading>
+                    <Body style={{ fontSize: 11, color: ramp[100], opacity: 0.85, marginTop: -3 }}>days left</Body>
+                  </View>
+                </View>
+                {retCount + warCount > 1 && (
+                  <Body style={{ fontSize: 12, color: ramp[100], opacity: 0.8, marginTop: 12 }}>
+                    {retCount} return{retCount === 1 ? '' : 's'} · {warCount} warrant{warCount === 1 ? 'y' : 'ies'} open
+                  </Body>
+                )}
+              </View>
+            </Pressable>
+          );
+        })()
+      ) : (
+        <View style={{ backgroundColor: colors.accent2Ramp[800], borderRadius: radius.lg * 1.15, padding: 20, overflow: 'hidden' }}>
+          <View style={{ position: 'absolute', right: -30, top: -30, width: 120, height: 120, borderRadius: 999, backgroundColor: colors.accent2Ramp[700] }} />
+          <Kicker style={{ color: colors.accent2Ramp[100], opacity: 0.85, letterSpacing: 1 }}>Deadlines</Kicker>
+          <Heading style={{ fontSize: 26, color: colors.accent2Ramp[100], marginTop: 2 }}>All clear</Heading>
+          <Body style={{ fontSize: 12.5, color: colors.accent2Ramp[100], opacity: 0.85, marginTop: 2 }}>
+            No open return windows or warranties right now.
+          </Body>
+        </View>
+      )}
 
       {/* Reminders control */}
       <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
@@ -234,23 +285,6 @@ export default function DeadlinesScreen() {
             </Pressable>
           ))}
         </View>
-      )}
-
-      {rows.length === 0 && inProgress.length === 0 && (
-        <Card style={{ alignItems: 'center', gap: 8, paddingVertical: 30, marginTop: 4 }}>
-          <View
-            style={{
-              width: 52, height: 52, borderRadius: 999,
-              alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent2Ramp[200],
-            }}
-          >
-            <Icon name="clock" size={24} color={colors.accent2Ramp[700]} />
-          </View>
-          <Heading style={{ fontSize: 17, marginTop: 2 }}>All clear</Heading>
-          <Body style={{ fontSize: 12.5, color: ink(0.55), textAlign: 'center', paddingHorizontal: 20 }}>
-            No open return windows or warranties right now. New receipts show up here automatically.
-          </Body>
-        </Card>
       )}
     </ScrollView>
   );
