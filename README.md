@@ -82,7 +82,8 @@ Built with **Expo / React Native** (SDK 57) and a **Supabase** backend.
 - 🌙 **Dark mode** — Light / Dark / System
 
 **Sync (optional, private)**
-- ☁️ **Cloud backup** gated by a per‑device **"sync code"** — no account, no email
+- ☁️ **Cloud backup** gated by a per‑device **"sync code"** — no account required
+- 🔐 **Optional accounts** — email sign‑in for cross‑device sync without copying a code (layered on the sync‑code model; each account owns a private random vault key)
 - 🖼️ **Photo binaries** sync via a private storage bucket
 - 🔀 **Conflict resolution** — last *editor* wins (by edit time), so a stale device can't clobber a newer change
 - 📧 **Email import** — forward an e‑receipt to a private address and it files itself (setup required)

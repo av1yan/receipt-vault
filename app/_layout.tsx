@@ -54,6 +54,7 @@ export default function RootLayout() {
               <Stack.Screen name="settings" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
               <Stack.Screen name="insights" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
               <Stack.Screen name="savings" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="auth" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
               <Stack.Screen name="receipt/[id]" options={{ presentation: 'transparentModal', animation: 'fade' }} />
             </Stack>
           </View>

@@ -1,10 +1,11 @@
 import * as Clipboard from 'expo-clipboard';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Heading, Icon, Input, Kicker, Tag } from '../components/ui';
+import { getSession, signOut, type Session } from '../lib/auth';
 import { INBOUND_DOMAIN } from '../lib/config';
 import { haptics } from '../lib/haptics';
 import { dismiss } from '../lib/nav';
@@ -25,11 +26,24 @@ export default function SyncScreen() {
   const [copied, setCopied] = useState(false);
   const [vaultId, setVaultId] = useState<string | null>(null);
   const [addrCopied, setAddrCopied] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
 
-  useEffect(() => {
-    getVaultKey().then(setKey);
-    getVaultId().then(setVaultId);
-  }, []);
+  // Refresh on focus so returning from the auth screen reflects the new state.
+  useFocusEffect(
+    useCallback(() => {
+      getVaultKey().then(setKey);
+      getVaultId().then(setVaultId);
+      getSession().then(setSession);
+    }, []),
+  );
+
+  const doSignOut = async () => {
+    await signOut();
+    setSession(null);
+    setKey(await getVaultKey());
+    setVaultId(await getVaultId());
+    flash('Signed out');
+  };
 
   const importAddr = vaultId ? `${vaultId}@${INBOUND_DOMAIN}` : '';
   const copyAddr = async () => {
@@ -108,6 +122,32 @@ export default function SyncScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24, gap: 16 }} showsVerticalScrollIndicator={false}>
+        {/* account */}
+        <Card style={{ padding: 16, gap: 10 }}>
+          <Kicker style={{ color: ink(0.5), letterSpacing: 1 }}>Account</Kicker>
+          {session ? (
+            <>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: colors.accent2Ramp[200], alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon name="cloud" size={19} color={colors.accent2Ramp[700]} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Heading style={{ fontSize: 14.5 }}>{session.email}</Heading>
+                  <Body style={{ fontSize: 12, color: ink(0.55) }}>Signed in · your vault syncs across devices</Body>
+                </View>
+              </View>
+              <Button title="Sign out" variant="secondary" onPress={doSignOut} />
+            </>
+          ) : (
+            <>
+              <Body style={{ fontSize: 12.5, color: ink(0.6) }}>
+                Sign in to sync your vault across devices — no sync code to copy.
+              </Body>
+              <Button title="Sign in / Create account" onPress={() => router.push('/auth')} />
+            </>
+          )}
+        </Card>
+
         {/* status hero */}
         <View
           style={{

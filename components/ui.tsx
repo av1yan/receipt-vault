@@ -224,13 +224,19 @@ export function Input({
   borderColor,
   style,
   keyboardType,
+  secureTextEntry,
+  autoCapitalize,
+  autoComplete,
 }: {
   value?: string;
   onChangeText?: (t: string) => void;
   placeholder?: string;
   borderColor?: string;
   style?: StyleProp<TextStyle>;
-  keyboardType?: 'default' | 'decimal-pad' | 'number-pad';
+  keyboardType?: 'default' | 'decimal-pad' | 'number-pad' | 'email-address';
+  secureTextEntry?: boolean;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  autoComplete?: 'off' | 'email' | 'password' | 'new-password';
 }) {
   return (
     <TextInput
@@ -239,6 +245,10 @@ export function Input({
       placeholder={placeholder}
       placeholderTextColor={ink(0.4)}
       keyboardType={keyboardType}
+      secureTextEntry={secureTextEntry}
+      autoCapitalize={autoCapitalize}
+      autoComplete={autoComplete}
+      autoCorrect={false}
       style={[
         {
           minHeight: 36,
