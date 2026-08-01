@@ -100,6 +100,17 @@ Email import also needs an inbound‑mail provider pointed at the webhook — fu
 
 ---
 
+## Security
+
+- ✅ **Safe to be in this repo:** only the Supabase **anon** key (`lib/config.ts`) — it's a *publishable* client credential, designed to ship inside the app.
+- 🔒 **Never commit these** — they belong only in the Supabase secret store (Edge Functions → Secrets), never in a tracked file: the Supabase **service‑role key**, `ANTHROPIC_API_KEY`, and `INBOUND_SECRET`.
+- 🛡️ The anon key stays harmless because the data table (`cloud_receipts`) has **Row Level Security enabled with no policies** — so the anon key can't read or write it. All cloud access goes through the service‑role `sync` Edge Function, which scopes every row to `sha256(vaultKey)`.
+- 🔑 If you fork this, point `lib/config.ts` at **your own** Supabase project and set your **own** secrets — don't reuse the ones here.
+
+Found something that looks like a leaked secret? Open a private security advisory rather than a public issue.
+
+---
+
 ## Testing
 
 Pure logic (deadline derivation, CSV building, insights math) is covered by unit tests:
