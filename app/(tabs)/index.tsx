@@ -2,7 +2,6 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { NextDeadlineCard } from '../../components/NextDeadlineCard';
 import { Body, Button, Card, Chip, Heading, Icon, Input, Kicker, Tag, TornReceiptCard } from '../../components/ui';
 import { derive, fmtD, isActive, money, statusOf } from '../../lib/data';
 import { useVault } from '../../lib/store';
@@ -81,8 +80,6 @@ export default function VaultScreen() {
           </Body>
         </View>
       </View>
-
-      <NextDeadlineCard />
 
       <Input placeholder="Search merchant, item, amount…" value={query} onChangeText={setQuery} />
 
