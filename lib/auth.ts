@@ -71,12 +71,19 @@ export async function signUp(email: string, password: string): Promise<AuthResul
 
 export async function signOut(): Promise<void> {
   await SecureStore.deleteItemAsync(SESSION);
-  // Restore the device's own vault key so local (non-account) syncing resumes.
+  // Detach from the account vault: restore the device's own key, or mint a fresh
+  // one if this device never had its own (so it doesn't keep syncing the account).
   try {
     const backup = await SecureStore.getItemAsync(DEVICE_KEY_BACKUP);
-    if (backup) await setVaultKey(backup);
+    if (backup) {
+      await setVaultKey(backup);
+      await SecureStore.deleteItemAsync(DEVICE_KEY_BACKUP);
+    } else {
+      const bytes = await Crypto.getRandomBytesAsync(20);
+      await setVaultKey([...bytes].map((b) => b.toString(16).padStart(2, '0')).join(''));
+    }
   } catch {
-    /* leave the current key if restore fails */
+    /* leave the current key if this fails */
   }
 }
 
@@ -98,12 +105,16 @@ async function activateAccountVaultKey(session: Session) {
   let key = await fetchVaultKey(session.accessToken);
   if (!key) {
     const bytes = await Crypto.getRandomBytesAsync(20);
-    key = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
-    await fetch(`${SUPABASE_URL}/rest/v1/rv_user_vaults`, {
+    const candidate = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rv_user_vaults`, {
       method: 'POST',
       headers: { ...baseHeaders, Authorization: `Bearer ${session.accessToken}`, Prefer: 'return=minimal' },
-      body: JSON.stringify({ user_id: session.userId, vault_key: key }),
+      body: JSON.stringify({ user_id: session.userId, vault_key: candidate }),
     });
+    // Only adopt the new key if it actually persisted. If the insert lost a race
+    // (another device already created the row → PK conflict) or failed, converge
+    // on whatever is now stored instead of diverging onto an orphan key.
+    key = res.ok ? candidate : await fetchVaultKey(session.accessToken);
   }
   if (key) await setVaultKey(key);
 }

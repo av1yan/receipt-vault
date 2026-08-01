@@ -18,12 +18,19 @@ export function LockGate({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [prompting, setPrompting] = useState(false);
   const enabledRef = useRef(false);
+  const promptingRef = useRef(false); // guards against concurrent auth prompts
 
   const tryUnlock = useCallback(async () => {
+    if (promptingRef.current) return;
+    promptingRef.current = true;
     setPrompting(true);
-    const ok = await authenticate();
-    setPrompting(false);
-    if (ok) setLocked(false);
+    try {
+      const ok = await authenticate();
+      if (ok) setLocked(false);
+    } finally {
+      promptingRef.current = false;
+      setPrompting(false);
+    }
   }, []);
 
   // Load the setting once; lock (and immediately prompt) if App Lock is on.
@@ -66,10 +73,15 @@ export function LockGate({ children }: { children: React.ReactNode }) {
     return () => sub.remove();
   }, [tryUnlock]);
 
+  // Cover the app while we don't yet know the lock state (so content never
+  // flashes before the lock appears), and whenever it's locked.
+  const locking = ready && enabled && locked;
+  const showCover = !ready || locking;
+
   return (
     <View style={{ flex: 1 }}>
       {children}
-      {ready && enabled && locked && (
+      {showCover && (
         <View
           style={{
             ...StyleSheetAbsolute,
@@ -81,18 +93,22 @@ export function LockGate({ children }: { children: React.ReactNode }) {
           }}
         >
           <StatusBar style={statusBarStyle()} />
-          <View style={[{ width: 84, height: 84, borderRadius: 26, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }, shadow.md]}>
-            <Icon name="lock" size={38} color={colors.accent} />
-          </View>
-          <Heading style={{ fontSize: 24, marginTop: 22 }}>Vault locked</Heading>
-          <Body style={{ fontSize: 13.5, color: ink(0.55), textAlign: 'center', marginTop: 8, lineHeight: 20 }}>
-            Your receipts are private. Unlock to continue.
-          </Body>
-          <Button
-            title={prompting ? 'Unlocking…' : 'Unlock'}
-            onPress={prompting ? undefined : tryUnlock}
-            style={{ marginTop: 26, paddingHorizontal: 40, borderRadius: radius.pill }}
-          />
+          {locking && (
+            <>
+              <View style={[{ width: 84, height: 84, borderRadius: 26, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }, shadow.md]}>
+                <Icon name="lock" size={38} color={colors.accent} />
+              </View>
+              <Heading style={{ fontSize: 24, marginTop: 22 }}>Vault locked</Heading>
+              <Body style={{ fontSize: 13.5, color: ink(0.55), textAlign: 'center', marginTop: 8, lineHeight: 20 }}>
+                Your receipts are private. Unlock to continue.
+              </Body>
+              <Button
+                title={prompting ? 'Unlocking…' : 'Unlock'}
+                onPress={prompting ? undefined : tryUnlock}
+                style={{ marginTop: 26, paddingHorizontal: 40, borderRadius: radius.pill }}
+              />
+            </>
+          )}
         </View>
       )}
     </View>
