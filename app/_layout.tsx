@@ -10,7 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { configureNotifications } from '../lib/notifications';
+import { configureNotifications, initReminderSettings } from '../lib/notifications';
 import { colors } from '../lib/theme';
 import { VaultProvider } from '../lib/store';
 
@@ -24,6 +24,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     configureNotifications();
+    initReminderSettings();
   }, []);
 
   if (!loaded) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;

@@ -5,10 +5,28 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { addDays, derive, fmtDY, isActive, type Receipt } from './data';
+import { DEFAULT_SETTINGS, loadSettings } from './settings';
 
-// How far ahead of each deadline to remind.
-const RETURN_LEAD_DAYS = 3;
-const WARRANTY_LEAD_DAYS = 7;
+// How far ahead of each deadline to remind. User-configurable in Settings;
+// loaded once at startup via initReminderSettings().
+let leadDays = DEFAULT_SETTINGS.reminderLeadDays;
+
+export function getReminderLeadDays(): number {
+  return leadDays;
+}
+
+export function setReminderLeadDays(days: number) {
+  leadDays = days;
+}
+
+/** Load the persisted reminder lead time into memory (call once at startup). */
+export async function initReminderSettings(): Promise<void> {
+  try {
+    leadDays = (await loadSettings()).reminderLeadDays;
+  } catch {
+    /* keep default */
+  }
+}
 
 let handlerSet = false;
 
@@ -49,7 +67,7 @@ function reminderJobs(r: Receipt): Job[] {
   const now = new Date();
   const jobs: Job[] = [];
   if (v.retBy) {
-    const at = addDays(v.retBy, -RETURN_LEAD_DAYS);
+    const at = addDays(v.retBy, -leadDays);
     if (at > now) {
       jobs.push({
         at,
@@ -59,7 +77,7 @@ function reminderJobs(r: Receipt): Job[] {
     }
   }
   if (v.warTo) {
-    const at = addDays(v.warTo, -WARRANTY_LEAD_DAYS);
+    const at = addDays(v.warTo, -leadDays);
     if (at > now) {
       jobs.push({
         at,
@@ -97,4 +115,18 @@ export async function rescheduleAll(receipts: Receipt[]): Promise<number> {
 export async function scheduledCount(): Promise<number> {
   if (Platform.OS === 'web') return 0;
   return (await Notifications.getAllScheduledNotificationsAsync()).length;
+}
+
+/** Fire a sample reminder a couple seconds out so the user can confirm they work. */
+export async function sendTestReminder(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
+  if (!(await ensurePermission())) return false;
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Test reminder',
+      body: "You're all set — this is how deadline nudges will look.",
+    },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 2 },
+  });
+  return true;
 }

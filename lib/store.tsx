@@ -15,6 +15,7 @@ type VaultCtx = {
   addReceipt: (r: NewReceipt) => void;
   updateReceipt: (r: Receipt) => void;
   deleteReceipt: (id: number) => void;
+  clearAll: () => void;
   mergeReceipts: (remote: Receipt[], removedIds?: number[]) => void;
   setStatus: (id: number, status: ReceiptStatus, kind?: StatusKind | null) => void;
   setReimbursable: (id: number, value: boolean) => void;
@@ -146,6 +147,31 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     rescheduleAll(next).catch(() => {});
   }, []);
 
+  // Wipe every receipt: tombstone them all (so the erase propagates to the cloud
+  // and nothing gets re-pulled), clear the local DB + photos + budgets, and cancel
+  // all scheduled reminders.
+  const clearAll = useCallback(() => {
+    const targets = receiptsRef.current.slice();
+    for (const r of targets) tombstones.current.add(r.id);
+    if (targets.length) saveTombstones([...tombstones.current]).catch(() => {});
+    setReceipts([]);
+    if (persist.current) {
+      (async () => {
+        for (const r of targets) {
+          try {
+            await dbDeleteReceipt(r.id);
+          } catch (e) {
+            console.warn('[receipt-vault] clearAll delete failed', e);
+          }
+        }
+      })();
+    }
+    for (const r of targets) deletePhotoFor(r).catch(() => {});
+    setBudgets({});
+    saveBudgets({}).catch(() => {});
+    rescheduleAll([]).catch(() => {});
+  }, []);
+
   // Merge receipts pulled from the cloud (remote wins on id conflict), and remove
   // ids the server reports deleted (or tombstoned locally).
   const mergeReceipts = useCallback((remote: Receipt[], removedIds: number[] = []) => {
@@ -200,8 +226,8 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ receipts, addReceipt, updateReceipt, deleteReceipt, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash }),
-    [receipts, addReceipt, updateReceipt, deleteReceipt, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash],
+    () => ({ receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash }),
+    [receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash],
   );
 
   // Hold the UI on a plain background until the first load settles, so the

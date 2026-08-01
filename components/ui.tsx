@@ -390,6 +390,13 @@ export function Icon({ name, size = 21, color = colors.text }: { name: IconName;
         </>
       )}
       {name === 'chevron' && <Path d="M9 6l6 6-6 6" {...p} />}
+      {name === 'trash' && (
+        <>
+          <Path d="M4 7h16" {...p} />
+          <Path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" {...p} />
+          <Path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" {...p} />
+        </>
+      )}
       {name === 'wallet' && (
         <>
           <Rect x={3} y={6.5} width={18} height={12} rx={2.6} {...p} />
@@ -401,7 +408,7 @@ export function Icon({ name, size = 21, color = colors.text }: { name: IconName;
   );
 }
 export type IconName =
-  | 'vault' | 'clock' | 'bars' | 'plus' | 'bell' | 'cloud' | 'image' | 'share' | 'sliders' | 'chevron' | 'wallet';
+  | 'vault' | 'clock' | 'bars' | 'plus' | 'bell' | 'cloud' | 'image' | 'share' | 'sliders' | 'chevron' | 'wallet' | 'trash';
 
 // ── Toast ────────────────────────────────────────────────────────────────────
 export function Toast({ message, bottom = 108 }: { message: string; bottom?: number }) {

@@ -2,26 +2,39 @@ import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Body, Button, Card, Heading, Icon, IconName, Kicker } from '../components/ui';
+import { Body, Button, Card, Chip, Heading, Icon, IconName, Kicker } from '../components/ui';
+import { exportReceiptsCsv } from '../lib/export';
 import { dismiss } from '../lib/nav';
-import { ensurePermission, hasPermission, rescheduleAll, scheduledCount } from '../lib/notifications';
+import {
+  ensurePermission,
+  hasPermission,
+  rescheduleAll,
+  scheduledCount,
+  sendTestReminder,
+  setReminderLeadDays,
+} from '../lib/notifications';
+import { LEAD_PRESETS, loadSettings, saveSettings } from '../lib/settings';
 import { useVault } from '../lib/store';
 import { colors, fonts, ink, radius, shadow } from '../lib/theme';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { receipts, flash } = useVault();
+  const { receipts, clearAll, flash } = useVault();
 
   const [remindersOn, setRemindersOn] = useState(false);
   const [count, setCount] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [lead, setLead] = useState(3);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     let alive = true;
     (async () => {
+      const s = await loadSettings();
+      if (alive) setLead(s.reminderLeadDays);
       if (await hasPermission()) {
         const n = await scheduledCount();
         if (alive) {
@@ -49,6 +62,53 @@ export default function SettingsScreen() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const changeLead = async (days: number) => {
+    setLead(days);
+    setReminderLeadDays(days);
+    await saveSettings({ reminderLeadDays: days });
+    if (remindersOn) setCount(await rescheduleAll(receipts));
+    flash(`Reminding ${days} day${days > 1 ? 's' : ''} ahead`);
+  };
+
+  const doTest = async () => {
+    const ok = await sendTestReminder();
+    flash(ok ? 'Test reminder on its way' : 'Enable notifications first');
+  };
+
+  const doExport = async () => {
+    setExporting(true);
+    try {
+      const res = await exportReceiptsCsv(receipts);
+      if (res === 'empty') flash('No receipts to export');
+      else if (res === 'unavailable') flash('Sharing unavailable here');
+      else if (res === 'error') flash('Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const doErase = () => {
+    if (receipts.length === 0) {
+      flash('Vault is already empty');
+      return;
+    }
+    Alert.alert(
+      'Erase all data?',
+      `This permanently deletes all ${receipts.length} receipts, photos, and budgets from this device (and removes them from the cloud on next sync). This can't be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Erase everything',
+          style: 'destructive',
+          onPress: () => {
+            clearAll();
+            flash('Vault erased');
+          },
+        },
+      ],
+    );
   };
 
   const version = Constants.expoConfig?.version ?? '1.0.0';
@@ -103,6 +163,41 @@ export default function SettingsScreen() {
               </Pressable>
             )}
           </Card>
+
+          <Card style={{ padding: 14, gap: 10 }}>
+            <Body style={{ fontSize: 12.5, color: ink(0.7) }}>Remind me before a deadline</Body>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+              {LEAD_PRESETS.map((d) => (
+                <Chip
+                  key={d}
+                  label={d === 1 ? '1 day' : `${d} days`}
+                  active={lead === d}
+                  onPress={() => changeLead(d)}
+                />
+              ))}
+              <View style={{ flex: 1 }} />
+              <Button title="Send test" variant="secondary" onPress={doTest} />
+            </View>
+          </Card>
+        </View>
+
+        <View style={{ gap: 10 }}>
+          <Kicker style={{ color: ink(0.5), letterSpacing: 1 }}>Data</Kicker>
+          <NavRow
+            icon="share"
+            title="Export CSV"
+            subtitle={exporting ? 'Preparing…' : 'Spreadsheet of every receipt'}
+            onPress={exporting ? () => {} : doExport}
+            trailing="none"
+          />
+          <NavRow
+            icon="trash"
+            title="Erase all data"
+            subtitle="Delete every receipt, photo & budget"
+            onPress={doErase}
+            danger
+            trailing="none"
+          />
         </View>
 
         <View style={{ gap: 10 }}>
@@ -120,21 +215,32 @@ export default function SettingsScreen() {
   );
 }
 
-function Tile({ icon, active }: { icon: IconName; active: boolean }) {
+function Tile({ icon, active, danger }: { icon: IconName; active?: boolean; danger?: boolean }) {
+  const bg = danger ? '#f6ddd3' : active ? colors.accent2Ramp[200] : colors.accentRamp[100];
+  const fg = danger ? '#b23b28' : active ? colors.accent2Ramp[700] : colors.accent;
   return (
     <View
       style={{
         width: 40, height: 40, borderRadius: 12,
         alignItems: 'center', justifyContent: 'center',
-        backgroundColor: active ? colors.accent2Ramp[200] : colors.accentRamp[100],
+        backgroundColor: bg,
       }}
     >
-      <Icon name={icon} size={20} color={active ? colors.accent2Ramp[700] : colors.accent} />
+      <Icon name={icon} size={20} color={fg} />
     </View>
   );
 }
 
-function NavRow({ icon, title, subtitle, onPress }: { icon: IconName; title: string; subtitle: string; onPress: () => void }) {
+function NavRow({
+  icon, title, subtitle, onPress, danger, trailing = 'chevron',
+}: {
+  icon: IconName;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+  danger?: boolean;
+  trailing?: 'chevron' | 'none';
+}) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
       <View
@@ -146,12 +252,12 @@ function NavRow({ icon, title, subtitle, onPress }: { icon: IconName; title: str
           shadow.sm,
         ]}
       >
-        <Tile icon={icon} active={false} />
+        <Tile icon={icon} danger={danger} />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Heading style={{ fontSize: 15 }}>{title}</Heading>
+          <Heading style={{ fontSize: 15, color: danger ? '#b23b28' : colors.text }}>{title}</Heading>
           <Body style={{ fontSize: 12, color: ink(0.55) }}>{subtitle}</Body>
         </View>
-        <Icon name="chevron" size={18} color={ink(0.3)} />
+        {trailing === 'chevron' && <Icon name="chevron" size={18} color={ink(0.3)} />}
       </View>
     </Pressable>
   );
