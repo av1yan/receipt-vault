@@ -10,7 +10,7 @@ A local‑first mobile app for keeping every receipt and never missing a **retur
 Built with **Expo / React Native** (SDK 57) and a **Supabase** backend.
 
 <p align="center">
-  <img src="assets/screenshots/demo.gif" alt="Receipt Vault demo — a looping tour of the Vault, Deadlines, Insights, and Budgets screens" width="280">
+  <img src="assets/screenshots/demo.gif" alt="Receipt Vault demo — a screen recording touring the Vault, Deadlines, Spending, and Budgets tabs" width="280">
 </p>
 
 ---
