@@ -309,6 +309,7 @@ export default function ReceiptDetail() {
           )}
 
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+            <Button title="Edit" variant="secondary" style={{ flex: 1 }} onPress={() => router.push(`/edit/${receipt.id}`)} />
             <Button title="Share" variant="secondary" style={{ flex: 1 }} onPress={share} />
             <Button title="Close" variant="secondary" style={{ flex: 1 }} onPress={close} />
           </View>

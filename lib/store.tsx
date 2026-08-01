@@ -11,6 +11,7 @@ type NewReceipt = Omit<Receipt, 'id'>;
 type VaultCtx = {
   receipts: Receipt[];
   addReceipt: (r: NewReceipt) => void;
+  updateReceipt: (r: Receipt) => void;
   mergeReceipts: (remote: Receipt[]) => void;
   setStatus: (id: number, status: ReceiptStatus, kind?: StatusKind | null) => void;
   setReimbursable: (id: number, value: boolean) => void;
@@ -109,6 +110,16 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     scheduleForReceipt(receipt).catch((e) => console.warn('[receipt-vault] schedule failed', e));
   }, []);
 
+  // Replace an edited receipt (same id) and re-persist + reschedule.
+  const updateReceipt = useCallback((updated: Receipt) => {
+    const next = receiptsRef.current.map((r) => (r.id === updated.id ? updated : r));
+    setReceipts(next);
+    if (persist.current) {
+      insertReceipt(updated).catch((e) => console.warn('[receipt-vault] update failed', e));
+    }
+    rescheduleAll(next).catch(() => {});
+  }, []);
+
   // Merge receipts pulled from the cloud (remote wins on id conflict).
   const mergeReceipts = useCallback((remote: Receipt[]) => {
     if (remote.length === 0) return;
@@ -152,8 +163,8 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ receipts, addReceipt, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash }),
-    [receipts, addReceipt, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash],
+    () => ({ receipts, addReceipt, updateReceipt, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash }),
+    [receipts, addReceipt, updateReceipt, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash],
   );
 
   // Hold the UI on a plain background until the first load settles, so the
