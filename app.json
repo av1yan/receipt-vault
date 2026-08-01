@@ -6,12 +6,14 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.av1yan.receipt-vault"
+      "bundleIdentifier": "com.av1yan.receipt-vault",
+      "buildNumber": "1"
     },
     "android": {
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -42,7 +44,13 @@
       ],
       "expo-notifications",
       "expo-secure-store",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Receipt Vault to use Face ID to unlock your vault."
+        }
+      ]
     ]
   }
 }

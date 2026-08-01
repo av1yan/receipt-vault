@@ -134,6 +134,18 @@ Then open the project in Expo Go (scan the QR, or press `i` / `a` for a simulato
 
 > **Note:** a native/dev build (`expo run:ios`) needs CocoaPods; Expo Go is the quickest way to run it. The native home‑screen widget is scaffolded but requires an EAS build — see [`WIDGET.md`](WIDGET.md).
 
+### Release build (EAS)
+
+Store builds go through [EAS](https://docs.expo.dev/build/introduction/) (profiles in [`eas.json`](eas.json)). Version + build number live in [`app.json`](app.json) (`version`, `ios.buildNumber`, `android.versionCode`); the `production` profile auto‑increments the build number.
+
+```bash
+npx eas login
+npx eas build --platform ios --profile production
+npx eas submit --platform ios --profile production
+```
+
+Requires an Apple Developer account + App Store Connect app record. See [`CHANGELOG.md`](CHANGELOG.md) for release notes.
+
 ---
 
 ## Configuration
