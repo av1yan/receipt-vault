@@ -13,6 +13,26 @@ Built with **Expo / React Native** (SDK 57) and a **Supabase** backend.
   <img src="assets/screenshots/vault.png" alt="Receipt Vault — the Vault screen showing receipts with return-deadline badges" width="300">
 </p>
 
+---
+
+## Contents
+
+- [Screens](#screens)
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Architecture](#architecture)
+- [Getting started](#getting-started)
+- [Configuration](#configuration)
+- [Security](#security)
+- [Testing](#testing)
+- [Project structure](#project-structure)
+- [Roadmap](#roadmap)
+- [License](#license)
+
+---
+
+## Screens
+
 <table align="center">
   <tr>
     <td align="center" width="33%">
@@ -29,21 +49,6 @@ Built with **Expo / React Native** (SDK 57) and a **Supabase** backend.
     </td>
   </tr>
 </table>
-
----
-
-## Contents
-
-- [Features](#features)
-- [Tech stack](#tech-stack)
-- [Architecture](#architecture)
-- [Getting started](#getting-started)
-- [Configuration](#configuration)
-- [Security](#security)
-- [Testing](#testing)
-- [Project structure](#project-structure)
-- [Roadmap](#roadmap)
-- [License](#license)
 
 ---
 
