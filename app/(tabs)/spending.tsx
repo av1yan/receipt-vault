@@ -7,14 +7,14 @@ import { money } from '../../lib/data';
 import { exportReceiptsCsv } from '../../lib/export';
 import { haptics } from '../../lib/haptics';
 import { useVault } from '../../lib/store';
-import { CAT_COLOR, colors, fonts, ink } from '../../lib/theme';
+import { CAT_COLOR, colors, fonts, ink, radius, shadow } from '../../lib/theme';
 
 export default function SpendingScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { receipts, flash, budgets } = useVault();
 
-  const { monthTotal, monthCount, cats } = useMemo(() => {
+  const { monthTotal, monthSum, monthCount, cats } = useMemo(() => {
     const july = receipts.filter((r) => r.date.getMonth() === 6);
     const sum = july.reduce((a, r) => a + r.total, 0);
     const byCat: Record<string, number> = {};
@@ -49,8 +49,22 @@ export default function SpendingScreen() {
         };
       })
       .sort((a, b) => b.spend - a.spend);
-    return { monthTotal: money(sum), monthCount: july.length, cats: catList };
+    return { monthTotal: money(sum), monthSum: sum, monthCount: july.length, cats: catList };
   }, [receipts, budgets]);
+
+  // Real change vs the prior month (June), and the monthly goal from Budgets.
+  const change = useMemo(() => {
+    const prev = receipts.filter((r) => r.date.getMonth() === 5).reduce((a, r) => a + r.total, 0);
+    if (prev <= 0) return null;
+    const ratio = monthSum / prev;
+    if (ratio >= 2) return `${ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1)}× vs June`;
+    const p = Math.round((ratio - 1) * 100);
+    return `${p >= 0 ? '▲' : '▼'} ${Math.abs(p)}% vs June`;
+  }, [receipts, monthSum]);
+
+  const goal = budgets['__monthly'] || 0;
+  const overGoal = goal > 0 && monthSum > goal;
+  const goalPct = goal > 0 ? `${Math.min(100, Math.round((100 * monthSum) / goal))}%` : '0%';
 
   return (
     <ScrollView
@@ -61,27 +75,37 @@ export default function SpendingScreen() {
       <Heading style={{ fontSize: 34 }}>Spending</Heading>
 
       {/* month hero */}
-      <Card elevation="md" style={{ padding: 22, gap: 4, backgroundColor: colors.accentRamp[800], overflow: 'hidden' }}>
-        <View
-          style={{
-            position: 'absolute', right: -38, top: -38, width: 150, height: 150,
-            borderRadius: 999, backgroundColor: colors.accentRamp[700],
-          }}
-        />
-        <View
-          style={{
-            position: 'absolute', right: 26, bottom: -30, width: 70, height: 70,
-            borderRadius: 999, backgroundColor: colors.accent2Ramp[700], opacity: 0.6,
-          }}
-        />
-        <Kicker style={{ color: colors.accentRamp[100], opacity: 0.75, letterSpacing: 1 }}>July 2026</Kicker>
-        <Heading style={{ fontSize: 46, lineHeight: 47, letterSpacing: -0.9, color: colors.accentRamp[100] }}>
-          {monthTotal}
-        </Heading>
-        <Body style={{ fontSize: 12, color: colors.accentRamp[100], opacity: 0.8 }}>
-          across {monthCount} receipts · +8% vs June
-        </Body>
-      </Card>
+      <View style={[{ borderRadius: radius.lg * 1.15, overflow: 'hidden' }, shadow.md]}>
+        <View style={{ backgroundColor: colors.accentRamp[800], paddingHorizontal: 20, paddingTop: 20, paddingBottom: 20, gap: 6 }}>
+          <View style={{ position: 'absolute', right: -38, top: -38, width: 150, height: 150, borderRadius: 999, backgroundColor: colors.accentRamp[700] }} />
+          <Kicker style={{ color: colors.accentRamp[100], opacity: 0.8, letterSpacing: 1 }}>July 2026</Kicker>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <Heading style={{ fontSize: 44, lineHeight: 46, letterSpacing: -0.9, color: colors.accentRamp[100] }}>
+              {monthTotal}
+            </Heading>
+            {change && (
+              <View style={{ backgroundColor: colors.accentRamp[700], borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3, marginBottom: 4 }}>
+                <Body style={{ fontSize: 11, fontFamily: fonts.bodySemi, color: colors.accentRamp[100] }}>{change}</Body>
+              </View>
+            )}
+          </View>
+          <Body style={{ fontSize: 12.5, color: colors.accentRamp[100], opacity: 0.85 }}>
+            across {monthCount} receipt{monthCount === 1 ? '' : 's'} this month
+          </Body>
+          {goal > 0 && (
+            <View style={{ marginTop: 8, gap: 6 }}>
+              <View style={{ height: 7, borderRadius: 999, backgroundColor: colors.accentRamp[700], overflow: 'hidden' }}>
+                <View style={{ height: '100%', width: goalPct as any, borderRadius: 999, backgroundColor: colors.accentRamp[200] }} />
+              </View>
+              <Body style={{ fontSize: 12, color: colors.accentRamp[100], opacity: 0.9 }}>
+                {overGoal
+                  ? `${money(monthSum - goal)} over your ${money(goal)} goal`
+                  : `${money(goal - monthSum)} left of your ${money(goal)} goal`}
+              </Body>
+            </View>
+          )}
+        </View>
+      </View>
 
       <Card style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14, gap: 0 }}>
         <Kicker style={{ color: ink(0.42), letterSpacing: 1.2, marginBottom: 2 }}>By category</Kicker>
