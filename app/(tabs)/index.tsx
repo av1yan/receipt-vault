@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Chip, Heading, Icon, Input, Kicker, Tag, TornReceiptCard } from '../../components/ui';
-import { derive, fmtD, isActive, money, statusOf } from '../../lib/data';
+import { derive, fmtD, isActive, money, sameMonth, statusOf, TODAY } from '../../lib/data';
 import { useVault } from '../../lib/store';
 import { colors, fonts, ink, radius, shadow } from '../../lib/theme';
 
@@ -25,7 +25,7 @@ export default function VaultScreen() {
       if (filter === 'Returns open' && (!isActive(r) || v.retLeft < 0)) return false;
       if (filter === 'Under warranty' && v.warLeft < 0) return false;
       if (filter === 'Reimbursable' && !r.reimbursable) return false;
-      if (filter === 'This month' && r.date.getMonth() !== 6) return false;
+      if (filter === 'This month' && !sameMonth(r.date, TODAY)) return false;
       if (q) {
         const hay = `${r.merchant} ${r.cat} ${r.total}`.toLowerCase();
         if (!hay.includes(q)) return false;

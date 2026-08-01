@@ -1,9 +1,18 @@
 // Receipt data + derivation helpers, ported from the design prototype's DC script.
-// "Today" is pinned to match the prototype so the seeded countdowns line up.
 
-export const TODAY = new Date(2026, 6, 30); // Jul 30, 2026
+// "Today" at local midnight, read from the device clock. Deadline countdowns
+// (daysLeft) and "this month" filters all key off this.
+function startOfToday(): Date {
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+}
+export const TODAY = startOfToday();
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MON_FULL = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
 
 export const CATS = ['Groceries', 'Electronics', 'Home', 'Dining', 'Travel'] as const;
 
@@ -45,9 +54,13 @@ export type Derived = {
 };
 
 // ── formatting ──────────────────────────────────────────────────────────────
-const d = (y: number, m: number, day: number) => new Date(y, m - 1, day);
 export const fmtD = (x: Date) => `${MON[x.getMonth()]} ${x.getDate()}`;
 export const fmtDY = (x: Date) => `${MON[x.getMonth()]} ${x.getDate()}, ${x.getFullYear()}`;
+export const monthName = (x: Date) => MON_FULL[x.getMonth()];
+export const monthShort = (x: Date) => MON[x.getMonth()];
+export const fmtMonthYear = (x: Date) => `${MON_FULL[x.getMonth()]} ${x.getFullYear()}`;
+/** True if two dates fall in the same calendar month + year. */
+export const sameMonth = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 export const money = (n: number) =>
   '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
@@ -62,6 +75,9 @@ export const addMonths = (x: Date, n: number) => {
   return r;
 };
 export const daysLeft = (x: Date) => Math.ceil((x.getTime() - TODAY.getTime()) / 86400000);
+
+/** A date N days before today — keeps the demo seed's countdowns alive whenever it runs. */
+const ago = (n: number) => addDays(TODAY, -n);
 
 export function derive(r: Receipt): Derived {
   const retBy = r.ret ? addDays(r.date, r.ret) : null;
@@ -104,7 +120,7 @@ export function nextDeadline(receipts: Receipt[]): NextDeadline | null {
 // ── seed data (matches the prototype) ────────────────────────────────────────
 export const SEED: Receipt[] = [
   {
-    id: 1, merchant: 'Fern & Flour Market', cat: 'Groceries', date: d(2026, 7, 28),
+    id: 1, merchant: 'Fern & Flour Market', cat: 'Groceries', date: ago(2),
     total: 63.4, pay: 'Visa ·4417', ret: 14, war: 0,
     items: [
       { name: 'Sourdough loaf', price: 6.5 },
@@ -113,7 +129,7 @@ export const SEED: Receipt[] = [
     ],
   },
   {
-    id: 2, merchant: 'Northline Electronics', cat: 'Electronics', date: d(2026, 7, 21),
+    id: 2, merchant: 'Northline Electronics', cat: 'Electronics', date: ago(9),
     total: 429.0, pay: 'Amex ·1002', ret: 30, war: 24,
     items: [
       { name: 'Wireless headphones', price: 349.0 },
@@ -122,7 +138,7 @@ export const SEED: Receipt[] = [
     ],
   },
   {
-    id: 3, merchant: 'Clay & Cotton Home', cat: 'Home', date: d(2026, 7, 14),
+    id: 3, merchant: 'Clay & Cotton Home', cat: 'Home', date: ago(16),
     total: 187.25, pay: 'Visa ·4417', ret: 60, war: 12,
     items: [
       { name: 'Linen throw', price: 89.0 },
@@ -130,7 +146,7 @@ export const SEED: Receipt[] = [
     ],
   },
   {
-    id: 4, merchant: 'Harbor Coffee House', cat: 'Dining', date: d(2026, 7, 12),
+    id: 4, merchant: 'Harbor Coffee House', cat: 'Dining', date: ago(18),
     total: 18.6, pay: 'Apple Pay', ret: 0, war: 0,
     items: [
       { name: 'Flat white ×2', price: 9.6 },
@@ -138,7 +154,7 @@ export const SEED: Receipt[] = [
     ],
   },
   {
-    id: 5, merchant: 'Cedarline Rail', cat: 'Travel', date: d(2026, 7, 3),
+    id: 5, merchant: 'Cedarline Rail', cat: 'Travel', date: ago(27),
     total: 214.0, pay: 'Amex ·1002', ret: 0, war: 0,
     items: [
       { name: 'Return fare', price: 198.0 },
@@ -146,7 +162,7 @@ export const SEED: Receipt[] = [
     ],
   },
   {
-    id: 6, merchant: 'Birch Hardware', cat: 'Home', date: d(2026, 6, 26),
+    id: 6, merchant: 'Birch Hardware', cat: 'Home', date: ago(34),
     total: 96.1, pay: 'Visa ·4417', ret: 30, war: 12,
     items: [
       { name: 'Cordless drill', price: 79.0 },
@@ -154,11 +170,3 @@ export const SEED: Receipt[] = [
     ],
   },
 ];
-
-// What the mocked "AI extraction" returns after a scan.
-export const EXTRACTED = {
-  merchant: 'Northline Electronics',
-  total: '82.15',
-  date: 'Jul 30, 2026',
-  cat: 'Electronics',
-};

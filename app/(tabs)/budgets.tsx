@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Card, Heading, Input, Kicker } from '../../components/ui';
-import { CATS, money } from '../../lib/data';
+import { CATS, monthName, money, sameMonth, TODAY } from '../../lib/data';
 import { useVault } from '../../lib/store';
 import { CAT_COLOR, colors, fonts, ink, radius, shadow } from '../../lib/theme';
 
@@ -37,12 +37,12 @@ export default function BudgetsTab() {
   }, [budgets]);
 
   const { byCat, monthSpend, monthCount } = useMemo(() => {
-    const july = receipts.filter((r) => r.date.getMonth() === 6);
+    const thisMonth = receipts.filter((r) => sameMonth(r.date, TODAY));
     const bc: Record<string, number> = {};
-    july.forEach((r) => {
+    thisMonth.forEach((r) => {
       bc[r.cat] = (bc[r.cat] || 0) + r.total;
     });
-    return { byCat: bc, monthSpend: july.reduce((a, r) => a + r.total, 0), monthCount: july.length };
+    return { byCat: bc, monthSpend: thisMonth.reduce((a, r) => a + r.total, 0), monthCount: thisMonth.length };
   }, [receipts]);
 
   const goal = budgets[MONTHLY] || 0;
@@ -73,7 +73,7 @@ export default function BudgetsTab() {
     >
       <Heading style={{ fontSize: 34 }}>Budgets</Heading>
       <Body style={{ fontSize: 13, color: ink(0.6), marginTop: -8 }}>
-        Set a monthly goal and per-category limits — tracked live against July.
+        Set a monthly goal and per-category limits — tracked live against {monthName(TODAY)}.
       </Body>
 
       {/* ── Monthly goal hero ───────────────────────────────────────── */}
@@ -81,7 +81,7 @@ export default function BudgetsTab() {
         {/* colored status band */}
         <View style={{ backgroundColor: ramp[800], paddingHorizontal: 18, paddingTop: 18, paddingBottom: 20, gap: 10 }}>
           <View style={{ position: 'absolute', right: -34, top: -34, width: 132, height: 132, borderRadius: 999, backgroundColor: ramp[700] }} />
-          <Kicker style={{ color: bandInk, opacity: 0.85, letterSpacing: 1 }}>Monthly goal · July</Kicker>
+          <Kicker style={{ color: bandInk, opacity: 0.85, letterSpacing: 1 }}>Monthly goal · {monthName(TODAY)}</Kicker>
           {goal > 0 ? (
             <>
               <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
