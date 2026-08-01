@@ -47,5 +47,10 @@
     "typecheck": "tsc --noEmit",
     "test": "jest"
   },
+  "expo": {
+    "install": {
+      "exclude": ["jest", "@types/jest"]
+    }
+  },
   "private": true
 }
