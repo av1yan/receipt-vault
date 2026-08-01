@@ -1,7 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { loadBudgets, saveBudgets, type Budgets } from './budgets';
-import { SEED, type Receipt, type ReceiptStatus, type StatusKind } from './data';
+import { loadCategories, normalizeCat, saveCategories } from './categories';
+import { CATS, SEED, type Receipt, type ReceiptStatus, type StatusKind } from './data';
 import { deleteReceipt as dbDeleteReceipt, initDb, insertReceipt, loadReceipts } from './db';
 import { rescheduleAll, scheduleForReceipt } from './notifications';
 import { deletePhotoFor } from './photoSync';
@@ -21,6 +22,10 @@ type VaultCtx = {
   setReimbursable: (id: number, value: boolean) => void;
   budgets: Budgets;
   setBudget: (cat: string, amount: number) => void;
+  customCats: string[];
+  allCats: string[];
+  addCategory: (name: string) => void;
+  removeCategory: (name: string) => void;
   toast: string;
   flash: (msg: string) => void;
 };
@@ -102,6 +107,36 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
       return next;
     });
   }, []);
+
+  // User-defined categories (layered on top of the built-in CATS).
+  const [customCats, setCustomCats] = useState<string[]>([]);
+  useEffect(() => {
+    loadCategories().then(setCustomCats).catch(() => {});
+  }, []);
+  const allCats = useMemo(() => [...CATS, ...customCats], [customCats]);
+
+  const addCategory = useCallback((name: string) => {
+    const n = normalizeCat(name);
+    if (!n) return;
+    const key = n.toLowerCase();
+    if (CATS.some((c) => c.toLowerCase() === key)) return; // already a built-in
+    setCustomCats((prev) => {
+      if (prev.some((c) => c.toLowerCase() === key)) return prev;
+      const next = [...prev, n];
+      saveCategories(next);
+      return next;
+    });
+  }, []);
+
+  const removeCategory = useCallback((name: string) => {
+    const key = name.toLowerCase();
+    setCustomCats((prev) => {
+      const next = prev.filter((c) => c.toLowerCase() !== key);
+      if (next.length !== prev.length) saveCategories(next);
+      return next;
+    });
+    setBudget(name, 0); // drop any budget tied to it
+  }, [setBudget]);
 
   const flash = useCallback((msg: string) => {
     setToast(msg);
@@ -226,8 +261,8 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash }),
-    [receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, toast, flash],
+    () => ({ receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, customCats, allCats, addCategory, removeCategory, toast, flash }),
+    [receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, customCats, allCats, addCategory, removeCategory, toast, flash],
   );
 
   // Hold the UI on a plain background until the first load settles, so the

@@ -1,10 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Alert, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Chip, Field, Heading, Input } from '../../components/ui';
-import { CATS, fmtDY, type Receipt } from '../../lib/data';
+import { fmtDY, type Receipt } from '../../lib/data';
 import { dismiss } from '../../lib/nav';
 import { useVault } from '../../lib/store';
 import { colors, fonts, ink, statusBarStyle } from '../../lib/theme';
@@ -30,7 +30,21 @@ export default function EditReceipt() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { receipts, updateReceipt, flash } = useVault();
+  const { receipts, updateReceipt, flash, allCats, addCategory } = useVault();
+
+  const promptNewCat = () => {
+    if (Platform.OS === 'ios' && Alert.prompt) {
+      Alert.prompt('New category', 'Name your category', (text) => {
+        const n = (text || '').trim();
+        if (n) {
+          addCategory(n);
+          setCat(n);
+        }
+      });
+    } else {
+      flash('Add categories from the Budgets tab');
+    }
+  };
   const receipt = receipts.find((r) => String(r.id) === String(id));
 
   const [merchant, setMerchant] = useState(receipt?.merchant ?? '');
@@ -97,9 +111,10 @@ export default function EditReceipt() {
 
         <Field label="Category">
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-            {CATS.map((c) => (
+            {allCats.map((c) => (
               <Chip key={c} label={c} active={c === cat} onPress={() => setCat(c)} />
             ))}
+            <Chip label="＋ New" active={false} onPress={promptNewCat} />
           </View>
         </Field>
 

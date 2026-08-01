@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Animated, Easing, Image, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Chip, Field, Heading, Icon, Input, Kicker, Tag } from '../components/ui';
 import { addDays, addMonths, fmtD, fmtDY, money, TODAY } from '../lib/data';
@@ -50,7 +50,21 @@ const WARRANTY_OPTS: [string, number][] = [['None', 0], ['1 year', 12], ['2 year
 export default function Capture() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { addReceipt, flash } = useVault();
+  const { addReceipt, flash, allCats, addCategory } = useVault();
+
+  const promptNewCat = (onPick: (name: string) => void) => {
+    if (Platform.OS === 'ios' && Alert.prompt) {
+      Alert.prompt('New category', 'Name your category', (text) => {
+        const n = (text || '').trim();
+        if (n) {
+          addCategory(n);
+          onPick(n);
+        }
+      });
+    } else {
+      flash('Add categories from the Budgets tab');
+    }
+  };
 
   const [cap, setCap] = useState<Cap>('shoot');
   const [f, setF] = useState<Form>({
@@ -215,9 +229,10 @@ export default function Capture() {
 
         <Field label="Category">
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-            {CATS.map((c) => (
+            {allCats.map((c) => (
               <Chip key={c} label={c} active={c === f.cat} onPress={() => setF({ ...f, cat: c })} />
             ))}
+            <Chip label="＋ New" active={false} onPress={() => promptNewCat((n) => setF((prev) => ({ ...prev, cat: n })))} />
           </View>
         </Field>
 

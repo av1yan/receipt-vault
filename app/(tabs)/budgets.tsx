@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Body, Card, Heading, Input, Kicker } from '../../components/ui';
+import { Body, Card, Heading, Icon, Input, Kicker } from '../../components/ui';
 import { CATS, monthName, money, sameMonth, TODAY } from '../../lib/data';
 import { useVault } from '../../lib/store';
 import { CAT_COLOR, colors, fonts, ink, radius, shadow } from '../../lib/theme';
@@ -12,12 +12,13 @@ const GOAL_PRESETS = [500, 1000, 1500, 2000];
 
 export default function BudgetsTab() {
   const insets = useSafeAreaInsets();
-  const { receipts, budgets, setBudget } = useVault();
+  const { receipts, budgets, setBudget, allCats, addCategory, removeCategory } = useVault();
 
   const [goalVal, setGoalVal] = useState(budgets[MONTHLY] ? String(budgets[MONTHLY]) : '');
   const [vals, setVals] = useState<Record<string, string>>(() =>
     Object.fromEntries(CATS.map((c) => [c, budgets[c] ? String(budgets[c]) : ''])),
   );
+  const [newCat, setNewCat] = useState('');
 
   // Backfill inputs once budgets finish loading (in case this tab mounted before
   // the async load) — only fills empty fields, never clobbers what's being typed.
@@ -26,7 +27,7 @@ export default function BudgetsTab() {
     setVals((prev) => {
       let changed = false;
       const next = { ...prev };
-      for (const c of CATS) {
+      for (const c of allCats) {
         if ((next[c] ?? '') === '' && budgets[c]) {
           next[c] = String(budgets[c]);
           changed = true;
@@ -34,7 +35,7 @@ export default function BudgetsTab() {
       }
       return changed ? next : prev;
     });
-  }, [budgets]);
+  }, [budgets, allCats]);
 
   const { byCat, monthSpend, monthCount } = useMemo(() => {
     const thisMonth = receipts.filter((r) => sameMonth(r.date, TODAY));
@@ -49,7 +50,14 @@ export default function BudgetsTab() {
   const remaining = goal - monthSpend;
   const overGoal = goal > 0 && monthSpend > goal;
   const goalPct = goal > 0 ? `${Math.min(100, Math.round((100 * monthSpend) / goal))}%` : '0%';
-  const overCats = CATS.filter((c) => (budgets[c] || 0) > 0 && (byCat[c] || 0) > (budgets[c] || 0)).length;
+  const overCats = allCats.filter((c) => (budgets[c] || 0) > 0 && (byCat[c] || 0) > (budgets[c] || 0)).length;
+
+  const doAddCategory = () => {
+    const n = newCat.trim();
+    if (!n) return;
+    addCategory(n);
+    setNewCat('');
+  };
 
   const setGoal = (t: string) => {
     setGoalVal(t);
@@ -170,12 +178,13 @@ export default function BudgetsTab() {
         By category{overCats > 0 ? ` · ${overCats} over` : ''}
       </Kicker>
       <View style={{ gap: 10 }}>
-        {CATS.map((c) => {
+        {allCats.map((c) => {
           const spend = byCat[c] || 0;
           const b = budgets[c] || 0;
           const over = b > 0 && spend > b;
           const pct = b > 0 ? Math.min(100, Math.round((100 * spend) / b)) : 0;
           const dot = CAT_COLOR[c] || colors.accent;
+          const custom = !(CATS as readonly string[]).includes(c);
           return (
             <Card key={c} style={{ padding: 14, gap: b > 0 ? 10 : 0 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
@@ -211,6 +220,15 @@ export default function BudgetsTab() {
                     }}
                   />
                 </View>
+                {custom && (
+                  <Pressable
+                    onPress={() => removeCategory(c)}
+                    hitSlop={8}
+                    style={({ pressed }) => ({ padding: 4, opacity: pressed ? 0.5 : 1 })}
+                  >
+                    <Icon name="trash" size={16} color={ink(0.4)} />
+                  </Pressable>
+                )}
               </View>
               {b > 0 && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -225,6 +243,29 @@ export default function BudgetsTab() {
             </Card>
           );
         })}
+
+        {/* Add a custom category */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
+          <View style={{ flex: 1 }}>
+            <Input
+              value={newCat}
+              onChangeText={setNewCat}
+              placeholder="New category (e.g. Pets, Health)"
+            />
+          </View>
+          <Pressable
+            onPress={doAddCategory}
+            disabled={!newCat.trim()}
+            style={({ pressed }) => ({
+              flexDirection: 'row', alignItems: 'center', gap: 5,
+              paddingVertical: 9, paddingHorizontal: 15, borderRadius: radius.pill,
+              backgroundColor: colors.accent, opacity: newCat.trim() ? (pressed ? 0.8 : 1) : 0.4,
+            })}
+          >
+            <Icon name="plus" size={16} color="#fff" />
+            <Body style={{ fontFamily: fonts.heading, fontSize: 13, color: '#fff' }}>Add</Body>
+          </Pressable>
+        </View>
       </View>
     </ScrollView>
   );
