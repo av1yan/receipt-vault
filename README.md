@@ -76,6 +76,10 @@ Built with **Expo / React Native** (SDK 57) and a **Supabase** backend.
 - 🧾 **Reimbursable** flagging + a filtered CSV **report export**
 - 📤 **CSV export** of the full ledger (spreadsheet‑safe, formula‑injection escaped)
 
+**Privacy**
+- 🔒 **App Lock** — require Face ID / Touch ID / passcode to open the vault
+- 🌙 **Dark mode** — Light / Dark / System
+
 **Sync (optional, private)**
 - ☁️ **Cloud backup** gated by a per‑device **"sync code"** — no account, no email
 - 🖼️ **Photo binaries** sync via a private storage bucket
@@ -195,7 +199,6 @@ More docs: [`FEATURES.md`](FEATURES.md) (data model & contracts), [`EMAIL_IMPORT
 - 🏠 **Home‑screen widget** — surface the next deadline at a glance (native scaffold in `targets/`, needs an EAS build)
 - 🔎 **Full‑text search** across merchants and line items
 - 🧠 **Smarter category suggestions** from merchant history
-- 🔒 **App Lock** — Face ID / passcode to open the vault
 - 🤝 **Shared vaults** — invite a partner to a vault beyond the current same‑sync‑code sharing
 - 🧾 **Warranty document attachments** — store manuals / proof‑of‑purchase PDFs alongside the photo
 

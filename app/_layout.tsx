@@ -9,6 +9,7 @@ import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { LockGate } from '../components/LockGate';
 import { AppearanceProvider } from '../lib/appearance';
 import { configureNotifications, initReminderSettings } from '../lib/notifications';
 import { colors } from '../lib/theme';
@@ -33,6 +34,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AppearanceProvider>
       <VaultProvider>
+        <LockGate>
         {/* Phone-width column: on wide screens (web) the app renders centered at
             phone width so the layout matches the design's device frame. No effect
             on a real phone, where the screen is already narrower than the cap. */}
@@ -55,6 +57,7 @@ export default function RootLayout() {
             </Stack>
           </View>
         </View>
+        </LockGate>
       </VaultProvider>
       </AppearanceProvider>
     </SafeAreaProvider>

@@ -12,9 +12,11 @@ export type AppSettings = {
   reminderLeadDays: number;
   /** Light / dark / follow the OS. */
   themePref: ThemePref;
+  /** Require Face ID / passcode to open the vault. */
+  appLock: boolean;
 };
 
-export const DEFAULT_SETTINGS: AppSettings = { reminderLeadDays: 3, themePref: 'system' };
+export const DEFAULT_SETTINGS: AppSettings = { reminderLeadDays: 3, themePref: 'system', appLock: false };
 
 /** Allowed lead-time presets shown in Settings. */
 export const LEAD_PRESETS = [1, 3, 7] as const;
@@ -31,6 +33,7 @@ export async function loadSettings(): Promise<AppSettings> {
     return {
       reminderLeadDays: Number.isFinite(lead) && lead > 0 ? lead : DEFAULT_SETTINGS.reminderLeadDays,
       themePref: THEME_OPTIONS.includes(theme) ? theme : DEFAULT_SETTINGS.themePref,
+      appLock: typeof raw?.appLock === 'boolean' ? raw.appLock : DEFAULT_SETTINGS.appLock,
     };
   } catch {
     return { ...DEFAULT_SETTINGS };

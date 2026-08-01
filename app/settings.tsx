@@ -6,6 +6,7 @@ import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Chip, Heading, Icon, IconName, Kicker } from '../components/ui';
 import { useAppearance } from '../lib/appearance';
+import { biometricLabel, canUseAppLock } from '../lib/applock';
 import { exportReceiptsCsv } from '../lib/export';
 import { dismiss } from '../lib/nav';
 import {
@@ -33,12 +34,18 @@ export default function SettingsScreen() {
   const [busy, setBusy] = useState(false);
   const [lead, setLead] = useState(3);
   const [exporting, setExporting] = useState(false);
+  const [appLock, setAppLock] = useState(false);
+  const [bioLabel, setBioLabel] = useState('Face ID');
 
   useEffect(() => {
     let alive = true;
     (async () => {
       const s = await loadSettings();
-      if (alive) setLead(s.reminderLeadDays);
+      if (alive) {
+        setLead(s.reminderLeadDays);
+        setAppLock(s.appLock);
+      }
+      biometricLabel().then((l) => alive && setBioLabel(l));
       if (await hasPermission()) {
         const n = await scheduledCount();
         if (alive) {
@@ -79,6 +86,22 @@ export default function SettingsScreen() {
   const doTest = async () => {
     const ok = await sendTestReminder();
     flash(ok ? 'Test reminder on its way' : 'Enable notifications first');
+  };
+
+  const toggleAppLock = async () => {
+    if (appLock) {
+      setAppLock(false);
+      await updateSettings({ appLock: false });
+      flash('App Lock off');
+      return;
+    }
+    if (!(await canUseAppLock())) {
+      flash(`Set up ${bioLabel} or a passcode first`);
+      return;
+    }
+    setAppLock(true);
+    await updateSettings({ appLock: true });
+    flash('App Lock on');
   };
 
   const doExport = async () => {
@@ -200,6 +223,30 @@ export default function SettingsScreen() {
               <View style={{ flex: 1 }} />
               <Button title="Send test" variant="secondary" onPress={doTest} />
             </View>
+          </Card>
+        </View>
+
+        <View style={{ gap: 10 }}>
+          <Kicker style={{ color: ink(0.5), letterSpacing: 1 }}>Security</Kicker>
+          <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
+            <Tile icon="lock" active={appLock} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Heading style={{ fontSize: 15 }}>App Lock</Heading>
+              <Body style={{ fontSize: 12, color: ink(0.55) }}>
+                {appLock ? `On · ${bioLabel} or passcode to open` : `Require ${bioLabel} to open the vault`}
+              </Body>
+            </View>
+            <Pressable
+              onPress={toggleAppLock}
+              style={({ pressed }) => ({
+                paddingVertical: 8, paddingHorizontal: 16, borderRadius: radius.pill,
+                backgroundColor: appLock ? colors.accent2Ramp[200] : colors.accent, opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Body style={{ fontFamily: fonts.heading, fontSize: 13, color: appLock ? colors.accent2Ramp[800] : '#fff' }}>
+                {appLock ? 'On' : 'Turn on'}
+              </Body>
+            </Pressable>
           </Card>
         </View>
 

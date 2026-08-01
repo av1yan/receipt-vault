@@ -46,10 +46,18 @@ describe('loadSettings', () => {
     expect(await loadSettings()).not.toBe(DEFAULT_SETTINGS);
   });
 
-  it('reads a valid stored lead time and theme', async () => {
-    mockFiles[FILE] = JSON.stringify({ reminderLeadDays: 7, themePref: 'dark' });
-    expect(await loadSettings()).toEqual({ reminderLeadDays: 7, themePref: 'dark' });
+  it('reads a valid stored lead time, theme, and app lock', async () => {
+    mockFiles[FILE] = JSON.stringify({ reminderLeadDays: 7, themePref: 'dark', appLock: true });
+    expect(await loadSettings()).toEqual({ reminderLeadDays: 7, themePref: 'dark', appLock: true });
   });
+
+  it.each(['yes', 1, 0, null, undefined])(
+    'falls back to default appLock for non-boolean value %p',
+    async (bad) => {
+      mockFiles[FILE] = JSON.stringify({ appLock: bad });
+      expect((await loadSettings()).appLock).toBe(DEFAULT_SETTINGS.appLock);
+    },
+  );
 
   it.each([0, -3, NaN, 'abc', null, undefined])(
     'falls back to default lead for invalid value %p',
@@ -80,7 +88,7 @@ describe('loadSettings', () => {
 
 describe('saveSettings', () => {
   it('persists a value that loadSettings reads back (round-trip)', async () => {
-    const s = { reminderLeadDays: 1, themePref: 'light' as const };
+    const s = { reminderLeadDays: 1, themePref: 'light' as const, appLock: true };
     await saveSettings(s);
     expect(mockFiles[FILE]).toBe(JSON.stringify(s));
     expect(await loadSettings()).toEqual(s);
@@ -89,26 +97,29 @@ describe('saveSettings', () => {
   it('round-trips every lead preset and theme option', async () => {
     for (const d of LEAD_PRESETS) {
       for (const t of THEME_OPTIONS) {
-        await saveSettings({ reminderLeadDays: d, themePref: t });
-        expect(await loadSettings()).toEqual({ reminderLeadDays: d, themePref: t });
+        await saveSettings({ reminderLeadDays: d, themePref: t, appLock: false });
+        expect(await loadSettings()).toEqual({ reminderLeadDays: d, themePref: t, appLock: false });
       }
     }
   });
 });
 
 describe('updateSettings', () => {
-  it('merges a partial change without clobbering the other field', async () => {
-    await saveSettings({ reminderLeadDays: 7, themePref: 'light' });
+  it('merges a partial change without clobbering the other fields', async () => {
+    await saveSettings({ reminderLeadDays: 7, themePref: 'light', appLock: true });
 
     await updateSettings({ themePref: 'dark' });
-    expect(await loadSettings()).toEqual({ reminderLeadDays: 7, themePref: 'dark' });
+    expect(await loadSettings()).toEqual({ reminderLeadDays: 7, themePref: 'dark', appLock: true });
 
     await updateSettings({ reminderLeadDays: 1 });
-    expect(await loadSettings()).toEqual({ reminderLeadDays: 1, themePref: 'dark' });
+    expect(await loadSettings()).toEqual({ reminderLeadDays: 1, themePref: 'dark', appLock: true });
+
+    await updateSettings({ appLock: false });
+    expect(await loadSettings()).toEqual({ reminderLeadDays: 1, themePref: 'dark', appLock: false });
   });
 
   it('starts from defaults when nothing is stored yet', async () => {
     const next = await updateSettings({ themePref: 'dark' });
-    expect(next).toEqual({ reminderLeadDays: DEFAULT_SETTINGS.reminderLeadDays, themePref: 'dark' });
+    expect(next).toEqual({ ...DEFAULT_SETTINGS, themePref: 'dark' });
   });
 });
