@@ -1,5 +1,10 @@
 # Receipt Vault
 
+[![CI](https://github.com/av1yan/receipt-vault/actions/workflows/ci.yml/badge.svg)](https://github.com/av1yan/receipt-vault/actions/workflows/ci.yml)
+![Expo SDK 57](https://img.shields.io/badge/Expo-SDK%2057-000?logo=expo&logoColor=fff)
+![React Native 0.86](https://img.shields.io/badge/React%20Native-0.86-61dafb?logo=react&logoColor=000)
+![License: MIT](https://img.shields.io/badge/License-MIT-c67139)
+
 A local‑first mobile app for keeping every receipt and never missing a **return window** or **warranty expiry** again. Snap a receipt, let AI read it, and Receipt Vault tracks the deadlines, your spending, and your budgets — all stored on‑device first, synced to the cloud only when you choose.
 
 Built with **Expo / React Native** (SDK 57) and a **Supabase** backend.
@@ -126,3 +131,20 @@ targets/        native widget scaffold (EAS build)
 ```
 
 More docs: [`FEATURES.md`](FEATURES.md) (data model & contracts), [`EMAIL_IMPORT.md`](EMAIL_IMPORT.md), [`WIDGET.md`](WIDGET.md).
+
+---
+
+## Roadmap
+
+- 🏠 **Home‑screen widget** — surface the next deadline at a glance (native scaffold in `targets/`, needs an EAS build)
+- 🔎 **Full‑text search** across merchants and line items
+- 🧠 **Smarter category suggestions** from merchant history
+- 🌙 **Dark mode** for the Organic palette
+- 🤝 **Shared vaults** — invite a partner to a vault beyond the current same‑sync‑code sharing
+- 🧾 **Warranty document attachments** — store manuals / proof‑of‑purchase PDFs alongside the photo
+
+---
+
+## License
+
+[MIT](LICENSE)
