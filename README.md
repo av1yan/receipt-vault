@@ -158,4 +158,4 @@ More docs: [`FEATURES.md`](FEATURES.md) (data model & contracts), [`EMAIL_IMPORT
 
 ## License
 
-[MIT](LICENSE)
+Released under the [MIT License](LICENSE) — free to use, modify, and distribute with attribution.
