@@ -11,6 +11,21 @@ Built with **Expo / React Native** (SDK 57) and a **Supabase** backend.
 
 ---
 
+## Contents
+
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Architecture](#architecture)
+- [Getting started](#getting-started)
+- [Configuration](#configuration)
+- [Security](#security)
+- [Testing](#testing)
+- [Project structure](#project-structure)
+- [Roadmap](#roadmap)
+- [License](#license)
+
+---
+
 ## Features
 
 **Capture & organize**
