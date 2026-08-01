@@ -35,17 +35,21 @@ Built with **Expo / React Native** (SDK 57) and a **Supabase** backend.
 
 <table align="center">
   <tr>
-    <td align="center" width="33%">
-      <img src="assets/screenshots/deadlines.png" alt="Deadlines screen" width="230"><br>
+    <td align="center" width="25%">
+      <img src="assets/screenshots/deadlines.png" alt="Deadlines screen" width="195"><br>
       <sub><b>Deadlines</b> — return & warranty countdowns</sub>
     </td>
-    <td align="center" width="33%">
-      <img src="assets/screenshots/insights.png" alt="Insights screen" width="230"><br>
-      <sub><b>Insights</b> — trends, top merchants, recurring</sub>
+    <td align="center" width="25%">
+      <img src="assets/screenshots/insights.png" alt="Insights screen" width="195"><br>
+      <sub><b>Insights</b> — trends, merchants, recurring</sub>
     </td>
-    <td align="center" width="33%">
-      <img src="assets/screenshots/budgets.png" alt="Budgets screen" width="230"><br>
-      <sub><b>Budgets</b> — monthly goal & category limits</sub>
+    <td align="center" width="25%">
+      <img src="assets/screenshots/budgets.png" alt="Budgets screen" width="195"><br>
+      <sub><b>Budgets</b> — goal & category limits</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="assets/screenshots/settings.png" alt="Settings screen" width="195"><br>
+      <sub><b>Settings</b> — reminders, export & backup</sub>
     </td>
   </tr>
 </table>
