@@ -79,7 +79,7 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setReimbursable = useCallback((id: number, value: boolean) => {
-    const next = receiptsRef.current.map((r) => (r.id === id ? { ...r, reimbursable: value } : r));
+    const next = receiptsRef.current.map((r) => (r.id === id ? { ...r, reimbursable: value, updatedAt: Date.now() } : r));
     setReceipts(next);
     const updated = next.find((r) => r.id === id);
     if (updated && persist.current) {
@@ -111,7 +111,7 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   const addReceipt = useCallback((r: NewReceipt) => {
     const id = Math.max(Date.now(), lastId.current + 1);
     lastId.current = id;
-    const receipt: Receipt = { ...r, id };
+    const receipt: Receipt = { ...r, id, updatedAt: Date.now() };
     setReceipts((prev) => [receipt, ...prev]); // optimistic
     if (persist.current) {
       insertReceipt(receipt).catch((e) => console.warn('[receipt-vault] insert failed', e));
@@ -122,10 +122,11 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
 
   // Replace an edited receipt (same id) and re-persist + reschedule.
   const updateReceipt = useCallback((updated: Receipt) => {
-    const next = receiptsRef.current.map((r) => (r.id === updated.id ? updated : r));
+    const stamped: Receipt = { ...updated, updatedAt: Date.now() };
+    const next = receiptsRef.current.map((r) => (r.id === stamped.id ? stamped : r));
     setReceipts(next);
     if (persist.current) {
-      insertReceipt(updated).catch((e) => console.warn('[receipt-vault] update failed', e));
+      insertReceipt(stamped).catch((e) => console.warn('[receipt-vault] update failed', e));
     }
     rescheduleAll(next).catch(() => {});
   }, []);
@@ -186,7 +187,7 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     const at = new Date();
     const next = receiptsRef.current.map((r) =>
       r.id === id
-        ? { ...r, status, statusKind: status === 'open' ? null : (kind ?? r.statusKind ?? null), statusAt: at }
+        ? { ...r, status, statusKind: status === 'open' ? null : (kind ?? r.statusKind ?? null), statusAt: at, updatedAt: at.getTime() }
         : r,
     );
     setReceipts(next);

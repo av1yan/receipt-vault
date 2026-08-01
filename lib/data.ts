@@ -39,6 +39,7 @@ export type Receipt = {
   statusKind?: StatusKind | null; // which claim was filed/resolved
   statusAt?: Date | null; // when the status last changed
   reimbursable?: boolean; // flagged as a business / reimbursable expense
+  updatedAt?: number; // last local edit time (epoch millis) — for sync conflict resolution
 };
 
 /** Current lifecycle status, defaulting legacy receipts to 'open'. */

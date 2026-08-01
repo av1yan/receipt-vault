@@ -38,6 +38,7 @@ type CloudReceipt = {
   statusAt?: number | null;
   reimbursable?: boolean;
   deleted?: boolean;
+  updatedAt?: number;
 };
 
 export async function getVaultKey(): Promise<string | null> {
@@ -181,6 +182,7 @@ function toCloud(r: Receipt, hasImage: boolean) {
     statusKind: r.statusKind ?? null,
     statusAt: r.statusAt ? r.statusAt.getTime() : null,
     reimbursable: !!r.reimbursable,
+    updatedAt: r.updatedAt ?? 0,
   };
 }
 
@@ -200,5 +202,6 @@ function fromCloud(c: CloudReceipt, imageUri: string | null): Receipt {
     statusKind: (c.statusKind as StatusKind) ?? null,
     statusAt: c.statusAt != null ? new Date(c.statusAt) : null,
     reimbursable: !!c.reimbursable,
+    updatedAt: c.updatedAt ?? 0,
   };
 }
