@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2019",
+    "lib": ["es2019"],
+    "types": ["jest", "node"],
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noEmit": false,
+    "rootDir": ".",
+    "ignoreDeprecations": "6.0"
+  },
+  "include": ["__tests__/**/*.ts", "lib/**/*.ts"]
+}
