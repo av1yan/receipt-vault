@@ -6,6 +6,7 @@ import { CATS, SEED, type Receipt, type ReceiptStatus, type StatusKind } from '.
 import { deleteReceipt as dbDeleteReceipt, initDb, insertReceipt, loadReceipts } from './db';
 import { rescheduleAll, scheduleForReceipt } from './notifications';
 import { deletePhotoFor } from './photoSync';
+import { loadGoals, saveGoals, type SavingsGoal } from './savings';
 import { colors } from './theme';
 import { loadTombstones, saveTombstones } from './tombstones';
 
@@ -26,6 +27,10 @@ type VaultCtx = {
   allCats: string[];
   addCategory: (name: string) => void;
   removeCategory: (name: string) => void;
+  savingsGoals: SavingsGoal[];
+  addGoal: (name: string, target: number) => void;
+  contributeGoal: (id: number, amount: number) => void;
+  removeGoal: (id: number) => void;
   toast: string;
   flash: (msg: string) => void;
 };
@@ -137,6 +142,41 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     });
     setBudget(name, 0); // drop any budget tied to it
   }, [setBudget]);
+
+  // Savings goals (named targets the user contributes toward).
+  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
+  useEffect(() => {
+    loadGoals().then(setSavingsGoals).catch(() => {});
+  }, []);
+
+  const addGoal = useCallback((name: string, target: number) => {
+    const n = name.trim();
+    if (!n) return;
+    const id = Math.max(Date.now(), lastId.current + 1);
+    lastId.current = id;
+    setSavingsGoals((prev) => {
+      const next = [...prev, { id, name: n, target: Math.max(0, target || 0), saved: 0 }];
+      saveGoals(next);
+      return next;
+    });
+  }, []);
+
+  const contributeGoal = useCallback((id: number, amount: number) => {
+    if (!amount) return;
+    setSavingsGoals((prev) => {
+      const next = prev.map((g) => (g.id === id ? { ...g, saved: Math.max(0, g.saved + amount) } : g));
+      saveGoals(next);
+      return next;
+    });
+  }, []);
+
+  const removeGoal = useCallback((id: number) => {
+    setSavingsGoals((prev) => {
+      const next = prev.filter((g) => g.id !== id);
+      saveGoals(next);
+      return next;
+    });
+  }, []);
 
   const flash = useCallback((msg: string) => {
     setToast(msg);
@@ -261,8 +301,8 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, customCats, allCats, addCategory, removeCategory, toast, flash }),
-    [receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, customCats, allCats, addCategory, removeCategory, toast, flash],
+    () => ({ receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, customCats, allCats, addCategory, removeCategory, savingsGoals, addGoal, contributeGoal, removeGoal, toast, flash }),
+    [receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, customCats, allCats, addCategory, removeCategory, savingsGoals, addGoal, contributeGoal, removeGoal, toast, flash],
   );
 
   // Hold the UI on a plain background until the first load settles, so the

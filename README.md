@@ -72,6 +72,7 @@ Built with **Expo / React Native** (SDK 57) and a **Supabase** backend.
 **Money**
 - 📊 **Spending** by month & category, with a real vs‑prior‑month comparison
 - 🎯 **Budgets** — a monthly goal + per‑category limits (with your own **custom categories**), tracked live with over/under nudges
+- 💰 **Savings** — under‑budget savings, savings goals you contribute toward, and money owed back (reimbursables)
 - 📈 **Insights** — monthly‑spend trend, top merchants, and recurring/subscription detection
 - 🧾 **Reimbursable** flagging + a filtered CSV **report export**
 - 📤 **CSV export** of the full ledger (spreadsheet‑safe, formula‑injection escaped)

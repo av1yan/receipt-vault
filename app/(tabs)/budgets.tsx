@@ -1,7 +1,8 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Body, Card, Heading, Icon, Input, Kicker } from '../../components/ui';
+import { Body, Button, Card, Heading, Icon, Input, Kicker } from '../../components/ui';
 import { CATS, monthName, money, sameMonth, TODAY } from '../../lib/data';
 import { useVault } from '../../lib/store';
 import { CAT_COLOR, colors, fonts, ink, radius, shadow } from '../../lib/theme';
@@ -12,6 +13,7 @@ const GOAL_PRESETS = [500, 1000, 1500, 2000];
 
 export default function BudgetsTab() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { receipts, budgets, setBudget, allCats, addCategory, removeCategory } = useVault();
 
   const [goalVal, setGoalVal] = useState(budgets[MONTHLY] ? String(budgets[MONTHLY]) : '');
@@ -172,6 +174,8 @@ export default function BudgetsTab() {
           </View>
         </View>
       </View>
+
+      <Button title="View savings" variant="secondary" block onPress={() => router.push('/savings')} />
 
       {/* ── Category budgets ────────────────────────────────────────── */}
       <Kicker style={{ color: ink(0.5), letterSpacing: 1 }}>
