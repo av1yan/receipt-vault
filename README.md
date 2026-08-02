@@ -1,9 +1,23 @@
-# Receipt Vault
+<p align="center">
+  <img src="assets/icon.png" width="112" alt="Receipt Vault app icon">
+</p>
 
-[![CI](https://github.com/av1yan/receipt-vault/actions/workflows/ci.yml/badge.svg)](https://github.com/av1yan/receipt-vault/actions/workflows/ci.yml)
-![Expo SDK 57](https://img.shields.io/badge/Expo-SDK%2057-000?logo=expo&logoColor=fff)
-![React Native 0.86](https://img.shields.io/badge/React%20Native-0.86-61dafb?logo=react&logoColor=000)
-![License: MIT](https://img.shields.io/badge/License-MIT-c67139)
+<h1 align="center">Receipt Vault</h1>
+
+<p align="center">
+  <a href="https://github.com/av1yan/receipt-vault/actions/workflows/ci.yml"><img src="https://github.com/av1yan/receipt-vault/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/Expo-SDK%2057-000?logo=expo&logoColor=fff" alt="Expo SDK 57">
+  <img src="https://img.shields.io/badge/React%20Native-0.86-61dafb?logo=react&logoColor=000" alt="React Native 0.86">
+  <img src="https://img.shields.io/badge/License-MIT-c67139" alt="License: MIT">
+</p>
+
+<p align="center">
+  <em>Never miss a return window or a warranty expiry again.</em>
+</p>
+
+<p align="center">
+  <sub>Designed &amp; built with care by <a href="https://github.com/av1yan">@av1yan</a> · made because I kept losing receipts.</sub>
+</p>
 
 A local‑first mobile app for keeping every receipt and never missing a **return window** or **warranty expiry** again. Snap a receipt, let AI read it, and Receipt Vault tracks the deadlines, your spending, and your budgets — all stored on‑device first, synced to the cloud only when you choose.
 
