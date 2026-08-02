@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Heading, Icon, Input, Kicker, ProgressBar } from '../components/ui';
 import { fmtMonthYear, money, sameMonth, TODAY } from '../lib/data';
@@ -14,10 +14,12 @@ const MONTHLY = '__monthly';
 export default function SavingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { receipts, budgets, savingsGoals, addGoal, contributeGoal, removeGoal, flash } = useVault();
+  const { receipts, budgets, savingsGoals, addGoal, contributeGoal, removeGoal } = useVault();
 
   const [name, setName] = useState('');
   const [target, setTarget] = useState('');
+  const [openId, setOpenId] = useState<number | null>(null); // which goal's contribute input is open
+  const [amt, setAmt] = useState('');
 
   const { underBudget, monthSpend, goal, reimbTotal, reimbCount } = useMemo(() => {
     const g = budgets[MONTHLY] || 0;
@@ -40,15 +42,16 @@ export default function SavingsScreen() {
     setTarget('');
   };
 
-  const promptContribute = (id: number, goalName: string) => {
-    if (Platform.OS === 'ios' && Alert.prompt) {
-      Alert.prompt(`Add to ${goalName}`, 'Amount to set aside', (text) => {
-        const amt = parseFloat((text || '').replace(/[^0-9.]/g, '')) || 0;
-        if (amt > 0) contributeGoal(id, amt);
-      }, 'plain-text', '', 'decimal-pad');
-    } else {
-      flash('Contributions can be added on iOS');
-    }
+  // Toggle a goal's inline contribution input (cross-platform — no Alert.prompt).
+  const toggleAdd = (id: number) => {
+    setOpenId((cur) => (cur === id ? null : id));
+    setAmt('');
+  };
+  const contributeAmt = parseFloat(amt.replace(/[^0-9.]/g, '')) || 0;
+  const submitContribute = (id: number) => {
+    if (contributeAmt > 0) contributeGoal(id, contributeAmt);
+    setAmt('');
+    setOpenId(null);
   };
 
   return (
@@ -122,14 +125,15 @@ export default function SavingsScreen() {
                     </Body>
                   </View>
                   <Pressable
-                    onPress={() => promptContribute(g.id, g.name)}
+                    onPress={() => toggleAdd(g.id)}
                     style={({ pressed }) => ({
                       flexDirection: 'row', alignItems: 'center', gap: 4,
                       paddingVertical: 7, paddingHorizontal: 13, borderRadius: radius.pill,
-                      backgroundColor: colors.accent2Ramp[200], opacity: pressed ? 0.75 : 1,
+                      backgroundColor: openId === g.id ? colors.accent2Ramp[300] : colors.accent2Ramp[200],
+                      opacity: pressed ? 0.75 : 1,
                     })}
                   >
-                    <Icon name="plus" size={14} color={colors.accent2Ramp[800]} />
+                    <Icon name={openId === g.id ? 'chevron' : 'plus'} size={14} color={colors.accent2Ramp[800]} />
                     <Body style={{ fontFamily: fonts.heading, fontSize: 12.5, color: colors.accent2Ramp[800] }}>Add</Body>
                   </Pressable>
                   <Pressable onPress={() => removeGoal(g.id)} hitSlop={8} style={({ pressed }) => ({ padding: 4, opacity: pressed ? 0.5 : 1 })}>
@@ -138,6 +142,29 @@ export default function SavingsScreen() {
                 </View>
                 {g.target > 0 && (
                   <ProgressBar pct={`${pct}%`} color={done ? colors.accent2Ramp[600] : colors.accent} />
+                )}
+                {openId === g.id && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={{ flex: 1 }}>
+                      <Input
+                        value={amt}
+                        onChangeText={setAmt}
+                        placeholder="Amount to set aside"
+                        keyboardType="decimal-pad"
+                      />
+                    </View>
+                    <Pressable
+                      onPress={() => submitContribute(g.id)}
+                      disabled={contributeAmt <= 0}
+                      style={({ pressed }) => ({
+                        paddingVertical: 9, paddingHorizontal: 18, borderRadius: radius.pill,
+                        backgroundColor: colors.accent2,
+                        opacity: contributeAmt > 0 ? (pressed ? 0.8 : 1) : 0.4,
+                      })}
+                    >
+                      <Body style={{ fontFamily: fonts.heading, fontSize: 13, color: '#fff' }}>Save</Body>
+                    </Pressable>
+                  </View>
                 )}
               </Card>
             );
