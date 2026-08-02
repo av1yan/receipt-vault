@@ -251,6 +251,16 @@ export default function SettingsScreen() {
         </View>
 
         <View style={{ gap: 10 }}>
+          <Kicker style={{ color: ink(0.5), letterSpacing: 1 }}>Vault</Kicker>
+          <NavRow
+            icon="vault"
+            title="Home inventory"
+            subtitle="Insured valuables + total value"
+            onPress={() => router.push('/inventory')}
+          />
+        </View>
+
+        <View style={{ gap: 10 }}>
           <Kicker style={{ color: ink(0.5), letterSpacing: 1 }}>Data</Kicker>
           <NavRow
             icon="share"

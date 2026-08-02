@@ -62,6 +62,7 @@ Built with **Expo / React Native** (SDK 57) and a **Supabase** backend.
 - 📸 Camera capture with **AI extraction** (Claude vision) — reads merchant, total, date, category, and line items; manual entry + review fallback
 - 🗂️ Searchable **Vault** with photo thumbnails, filters (returns open, under warranty, reimbursable, this month), and a torn‑receipt UI
 - ✏️ **Edit** and 🗑️ **delete** receipts (deletes propagate across devices via tombstones)
+- 🏠 **Home inventory** — flag receipts as insured **valuables** (with serial numbers) for a proof-of-purchase inventory + total insured value, exportable for insurance claims
 
 **Deadlines — the core differentiator**
 - ⏰ Auto‑computed **return‑by** and **warranty‑expiry** countdowns from the purchase date

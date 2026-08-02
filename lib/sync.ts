@@ -37,6 +37,8 @@ type CloudReceipt = {
   statusKind?: string | null;
   statusAt?: number | null;
   reimbursable?: boolean;
+  insured?: boolean;
+  serial?: string | null;
   deleted?: boolean;
   updatedAt?: number;
 };
@@ -182,6 +184,8 @@ function toCloud(r: Receipt, hasImage: boolean) {
     statusKind: r.statusKind ?? null,
     statusAt: r.statusAt ? r.statusAt.getTime() : null,
     reimbursable: !!r.reimbursable,
+    insured: !!r.insured,
+    serial: r.serial ?? null,
     updatedAt: r.updatedAt ?? 0,
   };
 }
@@ -202,6 +206,8 @@ function fromCloud(c: CloudReceipt, imageUri: string | null): Receipt {
     statusKind: (c.statusKind as StatusKind) ?? null,
     statusAt: c.statusAt != null ? new Date(c.statusAt) : null,
     reimbursable: !!c.reimbursable,
+    insured: !!c.insured,
+    serial: c.serial ?? undefined,
     updatedAt: c.updatedAt ?? 0,
   };
 }

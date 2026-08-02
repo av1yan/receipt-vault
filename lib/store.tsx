@@ -21,6 +21,8 @@ type VaultCtx = {
   mergeReceipts: (remote: Receipt[], removedIds?: number[]) => void;
   setStatus: (id: number, status: ReceiptStatus, kind?: StatusKind | null) => void;
   setReimbursable: (id: number, value: boolean) => void;
+  setInsured: (id: number, value: boolean) => void;
+  setSerial: (id: number, value: string) => void;
   budgets: Budgets;
   setBudget: (cat: string, amount: number) => void;
   customCats: string[];
@@ -95,6 +97,25 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     const updated = next.find((r) => r.id === id);
     if (updated && persist.current) {
       insertReceipt(updated).catch((e) => console.warn('[receipt-vault] reimbursable persist failed', e));
+    }
+  }, []);
+
+  const setInsured = useCallback((id: number, value: boolean) => {
+    const next = receiptsRef.current.map((r) => (r.id === id ? { ...r, insured: value, updatedAt: Date.now() } : r));
+    setReceipts(next);
+    const updated = next.find((r) => r.id === id);
+    if (updated && persist.current) {
+      insertReceipt(updated).catch((e) => console.warn('[receipt-vault] insured persist failed', e));
+    }
+  }, []);
+
+  const setSerial = useCallback((id: number, value: string) => {
+    const serial = value.trim();
+    const next = receiptsRef.current.map((r) => (r.id === id ? { ...r, serial, updatedAt: Date.now() } : r));
+    setReceipts(next);
+    const updated = next.find((r) => r.id === id);
+    if (updated && persist.current) {
+      insertReceipt(updated).catch((e) => console.warn('[receipt-vault] serial persist failed', e));
     }
   }, []);
 
@@ -301,8 +322,8 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, customCats, allCats, addCategory, removeCategory, savingsGoals, addGoal, contributeGoal, removeGoal, toast, flash }),
-    [receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, budgets, setBudget, customCats, allCats, addCategory, removeCategory, savingsGoals, addGoal, contributeGoal, removeGoal, toast, flash],
+    () => ({ receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, setInsured, setSerial, budgets, setBudget, customCats, allCats, addCategory, removeCategory, savingsGoals, addGoal, contributeGoal, removeGoal, toast, flash }),
+    [receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, setInsured, setSerial, budgets, setBudget, customCats, allCats, addCategory, removeCategory, savingsGoals, addGoal, contributeGoal, removeGoal, toast, flash],
   );
 
   // Hold the UI on a plain background until the first load settles, so the
