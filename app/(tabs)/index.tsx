@@ -68,12 +68,19 @@ export default function VaultScreen() {
         </View>
       </View>
 
-      <Input placeholder="Search merchant, item, amount…" value={query} onChangeText={setQuery} />
+      <View style={{ gap: 10 }}>
+        <Input placeholder="Search merchant, item, amount…" value={query} onChangeText={setQuery} />
 
-      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-        {FILTERS.map((f) => (
-          <Chip key={f} label={f} active={f === filter} onPress={() => setFilter(f)} />
-        ))}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginHorizontal: -20 }}
+          contentContainerStyle={{ flexDirection: 'row', gap: 8, paddingHorizontal: 20 }}
+        >
+          {FILTERS.map((f) => (
+            <Chip key={f} label={f} active={f === filter} onPress={() => setFilter(f)} />
+          ))}
+        </ScrollView>
       </View>
 
       {list.length > 0 && (
