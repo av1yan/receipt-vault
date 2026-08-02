@@ -133,7 +133,7 @@ export function nextDeadline(receipts: Receipt[]): NextDeadline | null {
 // ── seed data (matches the prototype) ────────────────────────────────────────
 export const SEED: Receipt[] = [
   {
-    id: 1, merchant: 'Fern & Flour Market', cat: 'Groceries', date: ago(2),
+    id: 1, merchant: 'Fern & Flour Market', cat: 'Groceries', date: ago(0),
     total: 63.4, pay: 'Visa ·4417', ret: 14, war: 0,
     items: [
       { name: 'Sourdough loaf', price: 6.5 },
@@ -142,7 +142,7 @@ export const SEED: Receipt[] = [
     ],
   },
   {
-    id: 2, merchant: 'Northline Electronics', cat: 'Electronics', date: ago(9),
+    id: 2, merchant: 'Northline Electronics', cat: 'Electronics', date: ago(1),
     total: 429.0, pay: 'Amex ·1002', ret: 30, war: 24,
     items: [
       { name: 'Wireless headphones', price: 349.0 },
@@ -151,7 +151,7 @@ export const SEED: Receipt[] = [
     ],
   },
   {
-    id: 3, merchant: 'Clay & Cotton Home', cat: 'Home', date: ago(16),
+    id: 3, merchant: 'Clay & Cotton Home', cat: 'Home', date: ago(1),
     total: 187.25, pay: 'Visa ·4417', ret: 60, war: 12,
     items: [
       { name: 'Linen throw', price: 89.0 },
@@ -159,7 +159,7 @@ export const SEED: Receipt[] = [
     ],
   },
   {
-    id: 4, merchant: 'Harbor Coffee House', cat: 'Dining', date: ago(18),
+    id: 4, merchant: 'Harbor Coffee House', cat: 'Dining', date: ago(3),
     total: 18.6, pay: 'Apple Pay', ret: 0, war: 0,
     items: [
       { name: 'Flat white ×2', price: 9.6 },
@@ -167,7 +167,7 @@ export const SEED: Receipt[] = [
     ],
   },
   {
-    id: 5, merchant: 'Cedarline Rail', cat: 'Travel', date: ago(27),
+    id: 5, merchant: 'Cedarline Rail', cat: 'Travel', date: ago(6),
     total: 214.0, pay: 'Amex ·1002', ret: 0, war: 0,
     items: [
       { name: 'Return fare', price: 198.0 },
@@ -175,7 +175,7 @@ export const SEED: Receipt[] = [
     ],
   },
   {
-    id: 6, merchant: 'Birch Hardware', cat: 'Home', date: ago(34),
+    id: 6, merchant: 'Birch Hardware', cat: 'Home', date: ago(10),
     total: 96.1, pay: 'Visa ·4417', ret: 30, war: 12,
     items: [
       { name: 'Cordless drill', price: 79.0 },

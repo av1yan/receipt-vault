@@ -104,9 +104,21 @@ export default function SavingsScreen() {
         <Kicker style={{ color: ink(0.5), letterSpacing: 1 }}>Goals</Kicker>
         <View style={{ gap: 10 }}>
           {savingsGoals.length === 0 && (
-            <Body style={{ fontSize: 12.5, color: ink(0.5) }}>
-              No goals yet — set one below (e.g. "Vacation", $2,000) and log what you set aside.
-            </Body>
+            <Card style={{ alignItems: 'center', gap: 8, paddingVertical: 24 }}>
+              <View
+                style={{
+                  width: 46, height: 46, borderRadius: 999,
+                  alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: colors.accent2Ramp[100],
+                }}
+              >
+                <Icon name="wallet" size={22} color={colors.accent2} />
+              </View>
+              <Heading style={{ fontSize: 15 }}>No goals yet</Heading>
+              <Body style={{ fontSize: 12.5, color: ink(0.55), textAlign: 'center', paddingHorizontal: 24 }}>
+                Set one below — like “Vacation”, $2,000 — and log what you set aside each month.
+              </Body>
+            </Card>
           )}
           {savingsGoals.map((g) => {
             const pct = g.target > 0 ? Math.min(100, Math.round((100 * g.saved) / g.target)) : 0;
