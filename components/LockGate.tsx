@@ -4,7 +4,7 @@
 
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus, View } from 'react-native';
+import { AppState, AppStateStatus, Modal, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { authenticate } from '../lib/applock';
 import { loadSettings } from '../lib/settings';
@@ -81,10 +81,13 @@ export function LockGate({ children }: { children: React.ReactNode }) {
   return (
     <View style={{ flex: 1 }}>
       {children}
-      {showCover && (
+      {/* The cover lives in a Modal so it presents ABOVE native full-screen modal
+          routes (settings, insights, capture, …). A plain absolute View would sit
+          under them, leaking their content on return-from-background. */}
+      <Modal visible={showCover} transparent animationType="none" statusBarTranslucent onRequestClose={() => {}}>
         <View
           style={{
-            ...StyleSheetAbsolute,
+            flex: 1,
             backgroundColor: colors.bg,
             alignItems: 'center',
             justifyContent: 'center',
@@ -110,9 +113,7 @@ export function LockGate({ children }: { children: React.ReactNode }) {
             </>
           )}
         </View>
-      )}
+      </Modal>
     </View>
   );
 }
-
-const StyleSheetAbsolute = { position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0 };
