@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Image, PanResponder, Pressable, ScrollView, Share, View } from 'react-native';
 import { Body, Button, Heading, Icon, Input, Kicker, Tag } from '../../components/ui';
-import { derive, fmtD, fmtDY, money, statusOf } from '../../lib/data';
+import { listAttachments, openAttachment, pickAndAttach, removeAttachment } from '../../lib/attachments';
+import { derive, fmtD, fmtDY, money, statusOf, type Attachment } from '../../lib/data';
 import { dismiss } from '../../lib/nav';
 import { useVault } from '../../lib/store';
 import { colors, fonts, ink, radius, shadow, scrim } from '../../lib/theme';
@@ -39,15 +40,49 @@ export default function ReceiptDetail() {
     }),
   ).current;
 
-  if (!receipt) {
-    close();
-    return null;
-  }
+  // Attachments (warranty docs / manuals). Hooks stay above the early return.
+  const rid = receipt?.id;
+  const [atts, setAtts] = useState<Attachment[]>([]);
+  useEffect(() => {
+    let alive = true;
+    if (rid != null) listAttachments(rid).then((a) => alive && setAtts(a)).catch(() => {});
+    else setAtts([]);
+    return () => { alive = false; };
+  }, [rid]);
+
+  // Dismiss in an effect (not during render) when the receipt is gone — e.g. after
+  // a delete, or a deep-link that arrived before the vault finished loading.
+  useEffect(() => {
+    if (!receipt) close();
+  }, [receipt]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!receipt) return null;
   const v = derive(receipt);
   const itemsSum = receipt.items.reduce((a, li) => a + li.price, 0);
   const st = statusOf(receipt);
   const reimb = !!receipt.reimbursable;
   const insured = !!receipt.insured;
+
+  const addDoc = async () => {
+    if (rid == null) return;
+    const a = await pickAndAttach(rid);
+    if (a) {
+      setAtts((prev) => [...prev, a]);
+      flash('Document attached');
+    }
+  };
+  const removeDoc = (a: Attachment) =>
+    Alert.alert('Remove attachment?', a.name, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          await removeAttachment(a);
+          setAtts((prev) => prev.filter((x) => x.id !== a.id));
+        },
+      },
+    ]);
   const kindLabel = receipt.statusKind === 'warranty' ? 'Warranty claim' : 'Return';
   const whenLabel = receipt.statusAt ? ` · ${fmtD(receipt.statusAt)}` : '';
 
@@ -235,6 +270,36 @@ export default function ReceiptDetail() {
               />
             </View>
           )}
+
+          {/* ── Attachments (warranty docs / manuals / proof of purchase) ─ */}
+          <View style={{ marginTop: 18 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <Kicker style={{ color: ink(0.5), letterSpacing: 1 }}>Documents</Kicker>
+              <Pressable onPress={addDoc} hitSlop={8} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 4, opacity: pressed ? 0.6 : 1 })}>
+                <Icon name="plus" size={15} color={colors.accent} />
+                <Body style={{ fontFamily: fonts.heading, fontSize: 12.5, color: colors.accent }}>Add</Body>
+              </Pressable>
+            </View>
+            {atts.length === 0 ? (
+              <Body style={{ fontSize: 12, color: ink(0.5) }}>Attach a warranty, manual, or proof of purchase (PDF or image).</Body>
+            ) : (
+              <View style={{ gap: 8 }}>
+                {atts.map((a) => (
+                  <Pressable key={a.id} onPress={() => openAttachment(a)} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+                    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: colors.surface, borderRadius: radius.md, padding: 12 }, shadow.sm]}>
+                      <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: colors.accentRamp[100], alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon name={a.kind === 'image' ? 'image' : 'file'} size={17} color={colors.accent} />
+                      </View>
+                      <Body numberOfLines={1} style={{ flex: 1, fontSize: 13, color: colors.text }}>{a.name}</Body>
+                      <Pressable onPress={() => removeDoc(a)} hitSlop={8} style={({ pressed }) => ({ padding: 4, opacity: pressed ? 0.5 : 1 })}>
+                        <Icon name="trash" size={15} color={ink(0.4)} />
+                      </Pressable>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
 
           {/* ── Line items (receipt block) ───────────────────────────── */}
           {receipt.items.length > 0 && (

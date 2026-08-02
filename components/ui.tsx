@@ -20,13 +20,15 @@ export function Body({
   children,
   style,
   selectable,
+  numberOfLines,
 }: {
   children: React.ReactNode;
   style?: StyleProp<TextStyle>;
   selectable?: boolean;
+  numberOfLines?: number;
 }) {
   return (
-    <Text selectable={selectable} style={[{ fontFamily: fonts.body, color: colors.text }, style]}>
+    <Text selectable={selectable} numberOfLines={numberOfLines} style={[{ fontFamily: fonts.body, color: colors.text }, style]}>
       {children}
     </Text>
   );
@@ -413,6 +415,12 @@ export function Icon({ name, size = 21, color = colors.text }: { name: IconName;
           <Path d="M8 11V8a4 4 0 0 1 8 0v3" {...p} />
         </>
       )}
+      {name === 'file' && (
+        <>
+          <Path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" {...p} />
+          <Path d="M14 3v5h5" {...p} />
+        </>
+      )}
       {name === 'wallet' && (
         <>
           <Rect x={3} y={6.5} width={18} height={12} rx={2.6} {...p} />
@@ -424,7 +432,7 @@ export function Icon({ name, size = 21, color = colors.text }: { name: IconName;
   );
 }
 export type IconName =
-  | 'vault' | 'clock' | 'bars' | 'plus' | 'bell' | 'cloud' | 'image' | 'share' | 'sliders' | 'chevron' | 'wallet' | 'trash' | 'lock';
+  | 'vault' | 'clock' | 'bars' | 'plus' | 'bell' | 'cloud' | 'image' | 'share' | 'sliders' | 'chevron' | 'wallet' | 'trash' | 'lock' | 'file';
 
 // ── Toast ────────────────────────────────────────────────────────────────────
 export function Toast({ message, bottom = 108 }: { message: string; bottom?: number }) {

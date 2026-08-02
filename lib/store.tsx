@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
+import { deleteAttachmentFilesFor } from './attachments';
 import { loadBudgets, saveBudgets, type Budgets } from './budgets';
 import { loadCategories, normalizeCat, saveCategories } from './categories';
 import { CATS, SEED, type Receipt, type ReceiptStatus, type StatusKind } from './data';
@@ -236,6 +237,7 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     setReceipts(next);
     tombstones.current.add(id);
     saveTombstones([...tombstones.current]).catch(() => {});
+    deleteAttachmentFilesFor(id).catch(() => {});
     if (persist.current) {
       dbDeleteReceipt(id).catch((e) => console.warn('[receipt-vault] delete failed', e));
     }
@@ -262,7 +264,10 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
         }
       })();
     }
-    for (const r of targets) deletePhotoFor(r).catch(() => {});
+    for (const r of targets) {
+      deletePhotoFor(r).catch(() => {});
+      deleteAttachmentFilesFor(r.id).catch(() => {});
+    }
     setBudgets({});
     saveBudgets({}).catch(() => {});
     rescheduleAll([]).catch(() => {});

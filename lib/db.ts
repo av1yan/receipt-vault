@@ -7,7 +7,7 @@
 // setups), callers fall back to in-memory seed data — see lib/store.tsx.
 
 import * as SQLite from 'expo-sqlite';
-import { SEED, type Receipt } from './data';
+import { SEED, type Attachment, type Receipt } from './data';
 
 const DB_NAME = 'receipts.db';
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -48,6 +48,15 @@ export async function initDb(): Promise<void> {
       name       TEXT    NOT NULL,
       price      REAL    NOT NULL,
       position   INTEGER NOT NULL,
+      FOREIGN KEY (receipt_id) REFERENCES receipts(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS attachments (
+      id         TEXT    PRIMARY KEY NOT NULL,
+      receipt_id INTEGER NOT NULL,
+      name       TEXT    NOT NULL,
+      uri        TEXT    NOT NULL,
+      kind       TEXT    NOT NULL,
+      added_at   INTEGER NOT NULL,
       FOREIGN KEY (receipt_id) REFERENCES receipts(id) ON DELETE CASCADE
     );
   `);
@@ -171,8 +180,36 @@ export async function insertReceipt(r: Receipt): Promise<void> {
   });
 }
 
-/** Remove a receipt (line items cascade). */
+/** Remove a receipt (line items + attachments cascade). */
 export async function deleteReceipt(id: number): Promise<void> {
   const db = await getDb();
   await db.runAsync('DELETE FROM receipts WHERE id = ?', [id]);
+}
+
+// ── Attachments (warranty docs / manuals / proof of purchase) ────────────────
+type AttachmentRow = { id: string; receipt_id: number; name: string; uri: string; kind: string; added_at: number };
+
+export async function loadAttachmentsFor(receiptId: number): Promise<Attachment[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<AttachmentRow>(
+    'SELECT id, receipt_id, name, uri, kind, added_at FROM attachments WHERE receipt_id = ? ORDER BY added_at ASC',
+    [receiptId],
+  );
+  return rows.map((r) => ({
+    id: r.id, receiptId: r.receipt_id, name: r.name, uri: r.uri,
+    kind: r.kind as Attachment['kind'], addedAt: r.added_at,
+  }));
+}
+
+export async function insertAttachment(a: Attachment): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    'INSERT OR REPLACE INTO attachments (id, receipt_id, name, uri, kind, added_at) VALUES (?, ?, ?, ?, ?, ?)',
+    [a.id, a.receiptId, a.name, a.uri, a.kind, a.addedAt],
+  );
+}
+
+export async function deleteAttachmentRow(id: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('DELETE FROM attachments WHERE id = ?', [id]);
 }

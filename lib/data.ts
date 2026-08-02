@@ -18,6 +18,16 @@ export const CATS = ['Groceries', 'Electronics', 'Home', 'Dining', 'Travel'] as 
 
 export type LineItem = { name: string; price: number };
 
+/** A document (warranty PDF, manual, proof of purchase) attached to a receipt. */
+export type Attachment = {
+  id: string;
+  receiptId: number;
+  name: string;
+  uri: string; // local file path
+  kind: 'pdf' | 'image' | 'file';
+  addedAt: number; // epoch millis
+};
+
 // Claim lifecycle: an open receipt still counts down its return/warranty
 // deadlines; once a claim is filed (or the receipt is resolved/refunded) it
 // leaves the active deadline list and is tracked separately.

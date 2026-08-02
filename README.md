@@ -68,6 +68,7 @@ Built with **Expo / React Native** (SDK 57) and a **Supabase** backend.
 - ⏰ Auto‑computed **return‑by** and **warranty‑expiry** countdowns from the purchase date
 - 🔔 Local **push reminders** before each deadline lapses
 - 📮 **Claim Helper** — drafts a return/warranty email (AI or template) with a "what you'll need" checklist
+- 📎 **Document attachments** — keep the warranty PDF, manual, or proof of purchase on a receipt, ready when you file a claim
 - ✅ **Status tracking** — mark a claim *filed* → *resolved*; resolved items leave the countdown
 
 **Money**
@@ -215,7 +216,6 @@ More docs: [`FEATURES.md`](FEATURES.md) (data model & contracts), [`EMAIL_IMPORT
 - 🔎 **Full‑text search** across merchants and line items
 - 🧠 **Smarter category suggestions** from merchant history
 - 🤝 **Shared vaults** — invite a partner to a vault beyond the current same‑sync‑code sharing
-- 🧾 **Warranty document attachments** — store manuals / proof‑of‑purchase PDFs alongside the photo
 
 ---
 
