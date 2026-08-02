@@ -282,6 +282,8 @@ export function ProgressBar({ pct, color, height = 6 }: { pct: string; color: st
 // ── Torn receipt card ────────────────────────────────────────────────────────
 // Approximates the CSS scalloped-mask bottom edge with a row of bg-colored
 // notches biting into the card's bottom.
+// Clean rounded list card (formerly a torn-receipt look). Kept the name so
+// callers don't change.
 export function TornReceiptCard({
   children,
   onPress,
@@ -291,22 +293,16 @@ export function TornReceiptCard({
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
-  const NOTCH = 12;
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [{ transform: [{ scale: pressed ? 0.985 : 1 }] }]}
-    >
+    <Pressable onPress={onPress} style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}>
       <View
         style={[
           {
             flexDirection: 'row',
             alignItems: 'center',
             backgroundColor: colors.surface,
-            borderTopLeftRadius: radius.md,
-            borderTopRightRadius: radius.md,
-            paddingTop: 14,
-            paddingBottom: 20,
+            borderRadius: radius.lg,
+            paddingVertical: 14,
             paddingHorizontal: 16,
           },
           shadow.sm,
@@ -314,25 +310,6 @@ export function TornReceiptCard({
         ]}
       >
         {children}
-      </View>
-      {/* scalloped tear */}
-      <View
-        style={{
-          flexDirection: 'row',
-          marginTop: -NOTCH / 2,
-          height: NOTCH / 2,
-          overflow: 'hidden',
-          justifyContent: 'space-between',
-          paddingHorizontal: 3,
-        }}
-        pointerEvents="none"
-      >
-        {Array.from({ length: 26 }).map((_, i) => (
-          <View
-            key={i}
-            style={{ width: NOTCH, height: NOTCH, borderRadius: NOTCH / 2, backgroundColor: colors.bg }}
-          />
-        ))}
       </View>
     </Pressable>
   );

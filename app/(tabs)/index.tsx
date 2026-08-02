@@ -40,20 +40,7 @@ export default function VaultScreen() {
       contentContainerStyle={{ paddingTop: insets.top + 20, paddingBottom: 132, paddingHorizontal: 20, gap: 16 }}
       showsVerticalScrollIndicator={false}
     >
-      {/* header with decorative blobs */}
       <View style={{ position: 'relative', paddingTop: 4, paddingBottom: 2 }}>
-        <View
-          style={{
-            position: 'absolute', right: -26, top: -34, width: 132, height: 132,
-            borderRadius: 999, backgroundColor: colors.accent2Ramp[200], opacity: 0.7,
-          }}
-        />
-        <View
-          style={{
-            position: 'absolute', right: 44, top: 38, width: 52, height: 52,
-            borderRadius: 999, backgroundColor: colors.accentRamp[200], opacity: 0.8,
-          }}
-        />
         <Pressable
           onPress={() => router.push('/settings')}
           accessibilityLabel="Settings"

@@ -35,10 +35,10 @@ type Palette = {
 };
 
 const LIGHT: Palette = {
-  bg: '#f5ead8',
-  surface: '#ebddc5',
-  text: '#201e1d',
-  textInk: { r: 32, g: 30, b: 29 },
+  bg: '#f2efe8',      // warm iOS grouped background (light gray)
+  surface: '#fffef9', // warm white card
+  text: '#1c1b18',
+  textInk: { r: 28, g: 27, b: 24 },
   accent: '#c67139',
   accent2: '#7a8a5e',
   neutral: L_NEUTRAL,
@@ -50,10 +50,10 @@ const LIGHT: Palette = {
 // brand accents (they read well on both). Ramps are reversed so tinted
 // backgrounds go dark and contrast tones go light.
 const DARK: Palette = {
-  bg: '#1f1c18',
-  surface: '#2b2721',
-  text: '#f3ead9',
-  textInk: { r: 243, g: 234, b: 217 },
+  bg: '#141311',      // warm iOS grouped background (near-black)
+  surface: '#211f1c', // warm dark card
+  text: '#f4f1ea',
+  textInk: { r: 244, g: 241, b: 234 },
   accent: '#c67139',
   accent2: '#7a8a5e',
   neutral: reverse(L_NEUTRAL),
@@ -106,14 +106,16 @@ export const CAT_COLOR: Record<string, string> = {
   get Travel() { return colors.neutral[500]; },
 };
 
+// Clean, iOS-leaning type: Figtree (geometric sans) throughout; bold for
+// headings/numbers instead of the decorative Caprasimo display face.
 export const fonts = {
-  heading: 'Caprasimo_400Regular',
+  heading: 'Figtree_700Bold',
   body: 'Figtree_400Regular',
   bodySemi: 'Figtree_600SemiBold',
   bodyBold: 'Figtree_700Bold',
 } as const;
 
-export const radius = { sm: 8, md: 16, lg: 28, pill: 999 } as const;
+export const radius = { sm: 8, md: 10, lg: 14, pill: 999 } as const;
 
 export const space = {
   1: 4.4,
@@ -124,10 +126,10 @@ export const space = {
   8: 35.2,
 } as const;
 
-// Elevation — RN shadow objects. A fixed dark shadow color works in both themes
-// (shadows are barely visible on dark surfaces anyway).
+// Elevation — flat, iOS-style. Cards read via contrast on the grouped
+// background; only floating elements (tab bar, FAB) get a soft shadow.
 export const shadow = {
-  sm: { shadowColor: '#2e2b25', shadowOpacity: 0.14, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
-  md: { shadowColor: '#2e2b25', shadowOpacity: 0.16, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
-  lg: { shadowColor: '#2e2b25', shadowOpacity: 0.22, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 12 },
+  sm: { shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
+  md: { shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  lg: { shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 22, shadowOffset: { width: 0, height: 10 }, elevation: 8 },
 } as const;

@@ -101,7 +101,7 @@ Built with **Expo / React Native** (SDK 57) and a **Supabase** backend.
 - **Anthropic Claude** (`claude-opus-5`) for receipt extraction & claim drafting
 - **jest + ts-jest** for unit tests
 
-Design: the warm "Organic" system (cream `#f5ead8`, terracotta `#c67139`, sage `#7a8a5e`) with Caprasimo + Figtree fonts — with a matching **dark mode** (Light / Dark / System, in Settings).
+Design: a clean, **iOS‑style grouped layout** — white cards on a warm light‑gray background, hairline dividers, flat shadows — set in **Figtree** with a warm terracotta accent (`#c67139`), plus a matching **dark mode** (Light / Dark / System, in Settings).
 
 ---
 
