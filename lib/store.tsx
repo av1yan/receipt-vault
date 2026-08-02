@@ -22,6 +22,7 @@ type VaultCtx = {
   mergeReceipts: (remote: Receipt[], removedIds?: number[]) => void;
   setStatus: (id: number, status: ReceiptStatus, kind?: StatusKind | null) => void;
   setReimbursable: (id: number, value: boolean) => void;
+  touchReceipt: (id: number) => void;
   setInsured: (id: number, value: boolean) => void;
   setSerial: (id: number, value: string) => void;
   budgets: Budgets;
@@ -98,6 +99,16 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     const updated = next.find((r) => r.id === id);
     if (updated && persist.current) {
       insertReceipt(updated).catch((e) => console.warn('[receipt-vault] reimbursable persist failed', e));
+    }
+  }, []);
+
+  // Bump a receipt's edit time (used when its attachments change) so the change syncs.
+  const touchReceipt = useCallback((id: number) => {
+    const next = receiptsRef.current.map((r) => (r.id === id ? { ...r, updatedAt: Date.now() } : r));
+    setReceipts(next);
+    const updated = next.find((r) => r.id === id);
+    if (updated && persist.current) {
+      insertReceipt(updated).catch((e) => console.warn('[receipt-vault] touch persist failed', e));
     }
   }, []);
 
@@ -327,8 +338,8 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, setInsured, setSerial, budgets, setBudget, customCats, allCats, addCategory, removeCategory, savingsGoals, addGoal, contributeGoal, removeGoal, toast, flash }),
-    [receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, setInsured, setSerial, budgets, setBudget, customCats, allCats, addCategory, removeCategory, savingsGoals, addGoal, contributeGoal, removeGoal, toast, flash],
+    () => ({ receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, setInsured, setSerial, touchReceipt, budgets, setBudget, customCats, allCats, addCategory, removeCategory, savingsGoals, addGoal, contributeGoal, removeGoal, toast, flash }),
+    [receipts, addReceipt, updateReceipt, deleteReceipt, clearAll, mergeReceipts, setStatus, setReimbursable, setInsured, setSerial, touchReceipt, budgets, setBudget, customCats, allCats, addCategory, removeCategory, savingsGoals, addGoal, contributeGoal, removeGoal, toast, flash],
   );
 
   // Hold the UI on a plain background until the first load settles, so the

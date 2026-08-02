@@ -13,7 +13,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export default function ReceiptDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { receipts, setStatus, setReimbursable, setInsured, setSerial, deleteReceipt, flash } = useVault();
+  const { receipts, setStatus, setReimbursable, setInsured, setSerial, touchReceipt, deleteReceipt, flash } = useVault();
   const receipt = receipts.find((r) => String(r.id) === String(id));
 
   const close = () => dismiss(router);
@@ -68,6 +68,7 @@ export default function ReceiptDetail() {
     const a = await pickAndAttach(rid);
     if (a) {
       setAtts((prev) => [...prev, a]);
+      touchReceipt(rid); // bump edit time so the new doc syncs
       flash('Document attached');
     }
   };
@@ -80,6 +81,7 @@ export default function ReceiptDetail() {
         onPress: async () => {
           await removeAttachment(a);
           setAtts((prev) => prev.filter((x) => x.id !== a.id));
+          if (rid != null) touchReceipt(rid); // bump edit time so the removal syncs
         },
       },
     ]);

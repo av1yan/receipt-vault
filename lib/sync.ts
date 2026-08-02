@@ -8,8 +8,16 @@
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import {
+  loadUploadedAttIds,
+  localAttachmentExists,
+  markAttUploaded,
+  saveDownloadedAttachment,
+  uploadAttachmentFile,
+} from './attachments';
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from './config';
-import type { Receipt, ReceiptStatus, StatusKind } from './data';
+import type { Attachment, Receipt, ReceiptStatus, StatusKind } from './data';
+import { loadAllAttachments } from './db';
 import {
   downloadPhoto,
   loadCloudPhotoIds,
@@ -18,6 +26,8 @@ import {
   uploadPhoto,
 } from './photoSync';
 import { loadTombstones, saveTombstones } from './tombstones';
+
+type AttMeta = { id: string; name: string; kind: Attachment['kind'] };
 
 const KEY_STORE = 'receiptVaultSyncKey';
 
@@ -39,6 +49,7 @@ type CloudReceipt = {
   reimbursable?: boolean;
   insured?: boolean;
   serial?: string | null;
+  attachments?: AttMeta[];
   deleted?: boolean;
   updatedAt?: number;
 };
@@ -99,6 +110,17 @@ export async function syncNow(local: Receipt[]): Promise<{ receipts: Receipt[]; 
   const tombstones = new Set(await loadTombstones());
   const pushable = local.filter((r) => !tombstones.has(r.id));
 
+  // Attachments: group local docs by receipt + track which files are uploaded.
+  const localAtts = await loadAllAttachments();
+  const attsByReceipt = new Map<number, Attachment[]>();
+  for (const a of localAtts) {
+    const list = attsByReceipt.get(a.receiptId) ?? [];
+    list.push(a);
+    attsByReceipt.set(a.receiptId, list);
+  }
+  const localAttIds = new Set(localAtts.map((a) => a.id));
+  const uploadedAtts = await loadUploadedAttIds();
+
   // 1. Upload any local photo that isn't in the cloud yet.
   for (const r of pushable) {
     if (inCloud.has(r.id) || !(await localPhotoExists(r.imageUri))) continue;
@@ -113,11 +135,26 @@ export async function syncNow(local: Receipt[]): Promise<{ receipts: Receipt[]; 
     }
   }
 
+  // 1b. Upload any local attachment file not yet in the cloud.
+  for (const a of localAtts) {
+    if (uploadedAtts.has(a.id) || tombstones.has(a.receiptId)) continue;
+    if (!(await localAttachmentExists(a.uri))) continue;
+    try {
+      const { signedUrl } = await callSync({ vaultKey, op: 'signAttUpload', attId: a.id });
+      if (signedUrl && (await uploadAttachmentFile(signedUrl, a))) {
+        await markAttUploaded(a.id);
+        uploadedAtts.add(a.id);
+      }
+    } catch (e) {
+      console.warn('[receipt-vault] attachment upload failed', a.id, e);
+    }
+  }
+
   // 2. Push metadata + deletions, and pull the merged set.
   const data = await callSync({
     vaultKey,
     op: 'both',
-    receipts: pushable.map((r) => toCloud(r, inCloud.has(r.id) || !!r.imageUri)),
+    receipts: pushable.map((r) => toCloud(r, inCloud.has(r.id) || !!r.imageUri, attsByReceipt.get(r.id) ?? [])),
     deletedIds: [...tombstones],
   });
   const remoteAll: CloudReceipt[] = data.receipts ?? [];
@@ -165,10 +202,36 @@ export async function syncNow(local: Receipt[]): Promise<{ receipts: Receipt[]; 
     }
     out.push(fromCloud(c, imageUri));
   }
+
+  // 5. Download any cloud attachment file we don't already have on this device.
+  const wantAtts: { meta: AttMeta; receiptId: number }[] = [];
+  for (const c of remote) {
+    for (const m of c.attachments ?? []) {
+      if (!localAttIds.has(m.id)) wantAtts.push({ meta: m, receiptId: c.id });
+    }
+  }
+  if (wantAtts.length) {
+    try {
+      const resp = await callSync({ vaultKey, op: 'signAttDownload', attIds: wantAtts.map((w) => w.meta.id) });
+      const attUrls: Record<string, string> = resp.urls ?? {};
+      for (const w of wantAtts) {
+        const u = attUrls[w.meta.id];
+        if (!u) continue;
+        const saved = await saveDownloadedAttachment({ ...w.meta, receiptId: w.receiptId }, u);
+        if (saved) {
+          localAttIds.add(saved.id);
+          await markAttUploaded(saved.id);
+        }
+      }
+    } catch (e) {
+      console.warn('[receipt-vault] attachment download failed', e);
+    }
+  }
+
   return { receipts: out, removedIds: [...tombstones] };
 }
 
-function toCloud(r: Receipt, hasImage: boolean) {
+function toCloud(r: Receipt, hasImage: boolean, atts: Attachment[]) {
   return {
     id: r.id,
     merchant: r.merchant,
@@ -186,6 +249,7 @@ function toCloud(r: Receipt, hasImage: boolean) {
     reimbursable: !!r.reimbursable,
     insured: !!r.insured,
     serial: r.serial ?? null,
+    attachments: atts.map((a) => ({ id: a.id, name: a.name, kind: a.kind })),
     updatedAt: r.updatedAt ?? 0,
   };
 }

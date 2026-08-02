@@ -189,16 +189,24 @@ export async function deleteReceipt(id: number): Promise<void> {
 // ── Attachments (warranty docs / manuals / proof of purchase) ────────────────
 type AttachmentRow = { id: string; receipt_id: number; name: string; uri: string; kind: string; added_at: number };
 
+function mapAtt(r: AttachmentRow): Attachment {
+  return { id: r.id, receiptId: r.receipt_id, name: r.name, uri: r.uri, kind: r.kind as Attachment['kind'], addedAt: r.added_at };
+}
+
 export async function loadAttachmentsFor(receiptId: number): Promise<Attachment[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<AttachmentRow>(
     'SELECT id, receipt_id, name, uri, kind, added_at FROM attachments WHERE receipt_id = ? ORDER BY added_at ASC',
     [receiptId],
   );
-  return rows.map((r) => ({
-    id: r.id, receiptId: r.receipt_id, name: r.name, uri: r.uri,
-    kind: r.kind as Attachment['kind'], addedAt: r.added_at,
-  }));
+  return rows.map(mapAtt);
+}
+
+/** Every attachment across all receipts (for building the sync map). */
+export async function loadAllAttachments(): Promise<Attachment[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<AttachmentRow>('SELECT id, receipt_id, name, uri, kind, added_at FROM attachments');
+  return rows.map(mapAtt);
 }
 
 export async function insertAttachment(a: Attachment): Promise<void> {
