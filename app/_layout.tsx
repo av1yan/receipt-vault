@@ -1,4 +1,3 @@
-import { Caprasimo_400Regular } from '@expo-google-fonts/caprasimo';
 import {
   Figtree_400Regular,
   Figtree_600SemiBold,
@@ -17,7 +16,6 @@ import { VaultProvider } from '../lib/store';
 
 export default function RootLayout() {
   const [loaded] = useFonts({
-    Caprasimo_400Regular,
     Figtree_400Regular,
     Figtree_600SemiBold,
     Figtree_700Bold,
