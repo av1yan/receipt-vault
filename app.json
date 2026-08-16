@@ -13,6 +13,7 @@
       "buildNumber": "1"
     },
     "android": {
+      "package": "com.av1yan.receiptvault",
       "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#c67139",
